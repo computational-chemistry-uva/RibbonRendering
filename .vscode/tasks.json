@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "cmake-build-debug",
+            "command": "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug .. && make",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [
+                "$gcc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        // {
+        //     "type": "shell",
+        //     "label": "cmake-build-tests",
+        //     "command": "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON .. && make",
+        //     "options": {
+        //         "cwd": "${workspaceFolder}"
+        //     },
+        //     "problemMatcher": [
+        //         "$gcc"
+        //     ],
+        //     "group": "build"
+        // }
+    ]
+}
