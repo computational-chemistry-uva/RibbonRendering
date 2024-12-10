@@ -15,27 +15,7 @@ static void glfw_error_callback(int error, const char* description) {
 }
 
 void windowResizeCallback(GLFWwindow* window, int width, int height) {
-    // Update GL viewport
     glViewport(0, 0, width, height);
-
-    // Create new projection matrix
-    float aspectRatio = (float)width / (float)height;
-    float fov = 45.0f;
-    float near = 0.1f;
-    float far = 100.0f;
-    float f = 1.0f / tan(fov / 2.0f);
-    float matrix[16] = {
-        f / aspectRatio, 0.0f, 0.0f, 0.0f,
-        0.0f, f, 0.0f, 0.0f,
-        0.0f, 0.0f, (far + near) / (near - far), -1.0f,
-        0.0f, 0.0f, (2.0f * far * near) / (near - far), 0.0f
-    };
-
-    // Update projection matrix
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glMultMatrixf(matrix);
-    glMatrixMode(GL_MODELVIEW);
 }
 
 namespace global {
@@ -62,23 +42,28 @@ namespace global {
 };
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
 }
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        global::mouse.leftButtonDown = true;
-        // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
-    }
+    // Register mouse release even when over UI
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         global::mouse.leftButtonDown = false;
         // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
+    // Only register click when not over UI
+    if (ImGui::GetIO().WantCaptureMouse) return;
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        global::mouse.leftButtonDown = true;
+        // glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+    }
 }
 
 void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
+    if (ImGui::GetIO().WantCaptureMouse) return;
     global::mouse.scroll += yoffset;
 }
 
@@ -180,52 +165,96 @@ int main() {
         "../src/fragment.glsl"
     );
 
-    // Imgui setup
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    ImGui::StyleColorsDark();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init(glsl_version);
-
     // Set callbacks
     glfwSetFramebufferSizeCallback(window, windowResizeCallback);
     glfwSetKeyCallback(window, keyCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetScrollCallback(window, mouseScrollCallback);
 
+    // Imgui setup
+    // NOTE Needs to be done after setting input callbacks!
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    io.IniFilename = NULL;
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+    ImGui::StyleColorsDark();
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init(glsl_version);
+
     // Setup projection matrix
     windowResizeCallback(window, 1280, 720);
 
+    // Cube vertex data: positions (x, y, z) and normals (nx, ny, nz)
     float vertices[] = {
-        // Positions          // Colors
-        -1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,
-         1.0f, -1.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-         0.0f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        // Front face
+        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, // Bottom-left
+         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, // Bottom-right
+         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, // Top-right
+        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, // Top-left
 
-         1.0f, -1.0f, -1.0f,  0.0f,  1.0f,  0.0f,
-         1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,
-         0.0f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        // Back face
+        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, // Bottom-left
+         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, // Bottom-right
+         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, // Top-right
+        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, // Top-left
 
-         1.0f, -1.0f,  1.0f,  1.0f,  0.0f,  0.0f,
-        -1.0f, -1.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-         0.0f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        // Left face
+        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, // Bottom-left
+        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, // Bottom-right
+        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, // Top-right
+        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f, // Top-left
 
-        -1.0f, -1.0f,  1.0f,  0.0f,  1.0f,  0.0f,
-        -1.0f, -1.0f, -1.0f,  1.0f,  0.0f,  0.0f,
-         0.0f,  1.0f,  0.0f,  0.0f,  0.0f,  1.0f,
+        // Right face
+         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, // Bottom-left
+         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, // Bottom-right
+         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, // Top-right
+         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f, // Top-left
+
+        // Top face
+        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, // Bottom-left
+         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, // Bottom-right
+         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, // Top-right
+        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, // Top-left
+
+        // Bottom face
+        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, // Bottom-left
+         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, // Bottom-right
+         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, // Top-right
+        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f  // Top-left
     };
 
+    // Indices for rendering the cube using triangle primitives
+    unsigned int indices[] = {
+        // Front face
+        0, 1, 2,  2, 3, 0,
+        // Back face
+        4, 5, 6,  6, 7, 4,
+        // Left face
+        8, 9, 10, 10, 11, 8,
+        // Right face
+        12, 13, 14, 14, 15, 12,
+        // Top face
+        16, 17, 18, 18, 19, 16,
+        // Bottom face
+        20, 21, 22, 22, 23, 20
+    };
+
+    unsigned int n_indices = 36;
+
     // Create Vertex Array Object (VAO)
-    GLuint VAO, VBO;
+    GLuint VAO, VBO, IBO;
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
+    glGenBuffers(1, &IBO);
     // Bind VAO first
     glBindVertexArray(VAO);
     // Bind and fill VBO
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    // Bind and fill IBO
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     // Position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -233,9 +262,11 @@ int main() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
-    float yaw = 0.0f;
+    float yaw = -45.0f;
     float pitch = 30.0f;
     float dist = 5.0f;
+    float fov = 45.0f;
+    int renderMode = 0;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -247,8 +278,11 @@ int main() {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Debug");
-        ImGui::Text("Shit works");
+        ImGui::SetNextWindowPos({0, 0});
+        // ImGui::SetNextWindowSize({250, 100});
+        ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
+        ImGui::SetNextItemWidth(80);
+        ImGui::Combo("Rendering mode", &renderMode, "Shaded\0Normals\0");
         ImGui::End();
 
         if (global::mouse.leftButtonDown) {
@@ -267,7 +301,7 @@ int main() {
         int w, h;
         glfwGetWindowSize(window, &w, &h);
         glm::mat4 projection = glm::perspective(
-            glm::radians(45.0f),  // Field of view
+            glm::radians(fov),  // Field of view
             float(w) / float(h),  // Aspect ratio
             0.1f,                 // Near plane
             100.0f                // Far plane
@@ -277,8 +311,10 @@ int main() {
         view = glm::translate(view, glm::vec3(0.0f, 0.0f, -dist));
         view = glm::rotate(view, glm::radians(pitch), glm::vec3(1.0f, 0.0f, 0.0f));
         view = glm::rotate(view, glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::vec4 viewPos = glm::inverse(view) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
         // Model matrix
         glm::mat4 model = glm::mat4(1.0f);
+        // model = glm::rotate(model, glm::radians(45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
         // Set uniforms
         GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
         GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
@@ -287,10 +323,17 @@ int main() {
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
+        GLint viewPosLoc = glGetUniformLocation(shaderProgram, "viewPos");
+        glUniform3f(viewPosLoc, viewPos.x, viewPos.y, viewPos.z);
+        GLint lightPosLoc = glGetUniformLocation(shaderProgram, "lightPos");
+        glUniform3f(lightPosLoc, 3.0f, 3.5f, 2.5f);
+        GLint renderModeLoc = glGetUniformLocation(shaderProgram, "renderMode");
+        glUniform1i(renderModeLoc, renderMode);
+
         glUseProgram(shaderProgram);
 
         glBindVertexArray(VAO);
-        glDrawArrays(GL_TRIANGLES, 0, 12);
+        glDrawElements(GL_TRIANGLES, n_indices, GL_UNSIGNED_INT, 0);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

@@ -12,4 +12,4 @@
 #	#valgrind --log-file="valgrind.log" ./a.out
 #fi
 
-mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug -G Ninja .. --log-level=WARNING && cmake --build . && ./biosplines
+mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug -G Ninja .. --log-level=WARNING && cmake --build . && ./spline_rendering
