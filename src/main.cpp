@@ -42,10 +42,10 @@ namespace global {
 };
 
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    if (ImGui::GetIO().WantCaptureKeyboard) return;
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
     }
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
 }
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
@@ -140,6 +140,7 @@ int main() {
     const char* glsl_version = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_SAMPLES, 4); // MSAA
 
     // Create window
     GLFWwindow* window = glfwCreateWindow(1280, 720, "OpenGL Viewport", NULL, NULL);
@@ -156,14 +157,11 @@ int main() {
         return 1;
     }
 
+    // Depth testing
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
-
-    GLuint shaderProgram = createShaderProgram(
-        "../src/vertex.glsl",
-        "../src/geometry.glsl",
-        "../src/fragment.glsl"
-    );
+    // MSAA
+    glEnable(GL_MULTISAMPLE);
 
     // Set callbacks
     glfwSetFramebufferSizeCallback(window, windowResizeCallback);
@@ -262,11 +260,23 @@ int main() {
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
 
+    GLuint wireframeProgram = createShaderProgram(
+        "../src/vertex.glsl",
+        "../src/wireframe_geometry.glsl",
+        "../src/fragment.glsl"
+    );
+
+    GLuint meshProgram = createShaderProgram(
+        "../src/vertex.glsl",
+        "../src/geometry.glsl",
+        "../src/fragment.glsl"
+    );
+
     float yaw = -45.0f;
     float pitch = 30.0f;
     float dist = 5.0f;
     float fov = 45.0f;
-    int renderMode = 0;
+    int renderMode = 2;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -282,7 +292,7 @@ int main() {
         // ImGui::SetNextWindowSize({250, 100});
         ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
         ImGui::SetNextItemWidth(80);
-        ImGui::Combo("Rendering mode", &renderMode, "Shaded\0Normals\0");
+        ImGui::Combo("Rendering mode", &renderMode, "Wireframe\0Normals\0Shaded");
         ImGui::End();
 
         if (global::mouse.leftButtonDown) {
@@ -296,6 +306,11 @@ int main() {
 
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        GLuint shaderProgram = meshProgram;
+        if (renderMode == 0) shaderProgram = wireframeProgram;
+
+        glUseProgram(shaderProgram);
 
         // Projection matrix
         int w, h;
@@ -329,8 +344,6 @@ int main() {
         glUniform3f(lightPosLoc, 3.0f, 3.5f, 2.5f);
         GLint renderModeLoc = glGetUniformLocation(shaderProgram, "renderMode");
         glUniform1i(renderModeLoc, renderMode);
-
-        glUseProgram(shaderProgram);
 
         glBindVertexArray(VAO);
         glDrawElements(GL_TRIANGLES, n_indices, GL_UNSIGNED_INT, 0);

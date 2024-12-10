@@ -11,7 +11,7 @@ uniform int renderMode;
 void main() {
     float diffuse = 1.0;
     float specular = 0.0;
-    if (renderMode == 0) {
+    if (renderMode == 2) {
         vec3 normal = normalize(fNorm);
         vec3 viewDir = normalize(viewPos - fPos);
         vec3 lightDir = normalize(lightPos - fPos);
