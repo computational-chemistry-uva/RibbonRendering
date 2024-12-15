@@ -140,10 +140,10 @@ int main() {
     const char* glsl_version = "#version 130";
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_SAMPLES, 4); // MSAA
+    // glfwWindowHint(GLFW_SAMPLES, 16); // MSAA
 
     // Create window
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "OpenGL Viewport", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "Viewer", NULL, NULL);
     if (!window) {
         glfwTerminate();
         return 1;
@@ -161,7 +161,7 @@ int main() {
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
     // MSAA
-    glEnable(GL_MULTISAMPLE);
+    // glEnable(GL_MULTISAMPLE);
 
     // Set callbacks
     glfwSetFramebufferSizeCallback(window, windowResizeCallback);
@@ -272,11 +272,19 @@ int main() {
         "../src/fragment.glsl"
     );
 
+    GLuint impostorProgram = createShaderProgram(
+        "../src/vertex_passthrough.glsl",
+        "../src/impostor_geometry.glsl",
+        "../src/impostor_fragment.glsl"
+    );
+
     float yaw = -45.0f;
     float pitch = 30.0f;
     float dist = 5.0f;
     float fov = 45.0f;
     int renderMode = 2;
+    bool showNormals = false;
+    float quadSize = 0.5f;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -290,9 +298,16 @@ int main() {
 
         ImGui::SetNextWindowPos({0, 0});
         // ImGui::SetNextWindowSize({250, 100});
-        ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar);
-        ImGui::SetNextItemWidth(80);
-        ImGui::Combo("Rendering mode", &renderMode, "Wireframe\0Normals\0Shaded");
+        ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::SetNextItemWidth(128);
+        ImGui::Combo("Rendering mode", &renderMode, "Wireframe\0Mesh\0Impostor");
+        if (renderMode != 0) {
+            ImGui::Checkbox("Show normals", &showNormals);
+        }
+        if (renderMode == 2) {
+            ImGui::SetNextItemWidth(128);
+            ImGui::SliderFloat("Atom size", &quadSize, 0.1f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        }
         ImGui::End();
 
         if (global::mouse.leftButtonDown) {
@@ -309,6 +324,7 @@ int main() {
 
         GLuint shaderProgram = meshProgram;
         if (renderMode == 0) shaderProgram = wireframeProgram;
+        else if (renderMode == 2) shaderProgram = impostorProgram;
 
         glUseProgram(shaderProgram);
 
@@ -344,9 +360,18 @@ int main() {
         glUniform3f(lightPosLoc, 3.0f, 3.5f, 2.5f);
         GLint renderModeLoc = glGetUniformLocation(shaderProgram, "renderMode");
         glUniform1i(renderModeLoc, renderMode);
+        GLint showNormalsLoc = glGetUniformLocation(shaderProgram, "showNormals");
+        glUniform1i(showNormalsLoc, showNormals);
+        GLint quadSizeLoc = glGetUniformLocation(shaderProgram, "quadSize");
+        glUniform1f(quadSizeLoc, quadSize);
 
         glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, n_indices, GL_UNSIGNED_INT, 0);
+        if (renderMode == 2) {
+            glDrawElements(GL_POINTS, n_indices, GL_UNSIGNED_INT, 0);
+        }
+        else {
+            glDrawElements(GL_TRIANGLES, n_indices, GL_UNSIGNED_INT, 0);
+        }
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

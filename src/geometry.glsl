@@ -9,6 +9,7 @@ in vec3 vNorm[];
 
 out vec3 fPos;
 out vec3 fNorm;
+out vec3 fCol;
 
 void main() {
     for (int i = 0; i < 3; i++) {
@@ -16,6 +17,7 @@ void main() {
         gl_Position = pos;
         fPos = vPos[i];
         fNorm = vNorm[i];
+        fCol = vec3(1.0);
         EmitVertex();
     }
     EndPrimitive();
