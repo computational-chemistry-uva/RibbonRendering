@@ -9,12 +9,13 @@ uniform float quadSize;
 /* uniform float time; */
 
 /* in vec3 vPos[]; */
-in vec3 vNorm[];
+/* in vec3 vNorm[]; */
 
 out vec3 fPos;
 out vec3 fNorm;
 out vec3 fCol;
 out vec2 fCoord;
+out vec3 fOrigin;
 
 void main() {
     vec3 viewRight = vec3(view[0][0], view[1][0], view[2][0]);
@@ -38,6 +39,7 @@ void main() {
         fNorm = worldNormal;
         fCol = vec3(1.0);
         fCoord = coords;
+        fOrigin = worldPos;
         EmitVertex();
     }
     EndPrimitive();
