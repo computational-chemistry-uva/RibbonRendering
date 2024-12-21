@@ -6,6 +6,7 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform float quadSize;
+uniform float quadSizeMultiplier;
 /* uniform float time; */
 
 /* in vec3 vPos[]; */
@@ -33,13 +34,18 @@ void main() {
 
     for (int i = 0; i < 4; i++) {
         vec2 coords = offsets[i];
-        vec3 pos = worldPos + coords.x * 0.5 * quadSize * viewRight + coords.y * 0.5 * quadSize * viewUp;
+        vec3 pos = worldPos + coords.x * 0.5 * quadSize * quadSizeMultiplier * viewRight + coords.y * 0.5 * quadSize * quadSizeMultiplier * viewUp;
         gl_Position = projection * view * vec4(pos, 1.0);
-        fPos = vec3(pos);
+        fPos = pos;
         fNorm = worldNormal;
         fCol = vec3(1.0);
-        fCoord = coords;
+        fCoord = coords * quadSizeMultiplier;
         fOrigin = worldPos;
+
+        fPos = vec3(view * vec4(fPos, 1.0));
+        fNorm = normalize(transpose(inverse(mat3(view))) * fNorm);
+        fOrigin = vec3(view * vec4(fOrigin, 1.0));
+
         EmitVertex();
     }
     EndPrimitive();

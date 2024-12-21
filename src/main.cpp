@@ -285,6 +285,8 @@ int main() {
     int renderMode = 2;
     bool showNormals = false;
     float quadSize = 0.5f;
+    bool distortionCorrection = true;
+    float quadSizeMultiplier = 1.0f;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -307,6 +309,11 @@ int main() {
         if (renderMode == 2) {
             ImGui::SetNextItemWidth(128);
             ImGui::SliderFloat("Atom size", &quadSize, 0.1f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+            ImGui::Checkbox("Distortion correction", &distortionCorrection);
+            if (distortionCorrection) {
+                ImGui::SetNextItemWidth(128);
+                ImGui::SliderFloat("Extra quad size factor", &quadSizeMultiplier, 1.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+            }
         }
         ImGui::End();
 
@@ -354,16 +361,21 @@ int main() {
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
-        GLint viewPosLoc = glGetUniformLocation(shaderProgram, "viewPos");
-        glUniform3f(viewPosLoc, viewPos.x, viewPos.y, viewPos.z);
-        GLint lightPosLoc = glGetUniformLocation(shaderProgram, "lightPos");
-        glUniform3f(lightPosLoc, 3.0f, 3.5f, 2.5f);
-        GLint renderModeLoc = glGetUniformLocation(shaderProgram, "renderMode");
-        glUniform1i(renderModeLoc, renderMode);
-        GLint showNormalsLoc = glGetUniformLocation(shaderProgram, "showNormals");
-        glUniform1i(showNormalsLoc, showNormals);
-        GLint quadSizeLoc = glGetUniformLocation(shaderProgram, "quadSize");
-        glUniform1f(quadSizeLoc, quadSize);
+        GLint uniformLoc;
+        uniformLoc = glGetUniformLocation(shaderProgram, "viewPos");
+        glUniform3f(uniformLoc, viewPos.x, viewPos.y, viewPos.z);
+        uniformLoc = glGetUniformLocation(shaderProgram, "lightPos");
+        glUniform3f(uniformLoc, 3.0f, 3.5f, 2.5f);
+        uniformLoc = glGetUniformLocation(shaderProgram, "renderMode");
+        glUniform1i(uniformLoc, renderMode);
+        uniformLoc = glGetUniformLocation(shaderProgram, "showNormals");
+        glUniform1i(uniformLoc, showNormals);
+        uniformLoc = glGetUniformLocation(shaderProgram, "quadSize");
+        glUniform1f(uniformLoc, quadSize);
+        uniformLoc = glGetUniformLocation(shaderProgram, "distortionCorrection");
+        glUniform1i(uniformLoc, distortionCorrection);
+        uniformLoc = glGetUniformLocation(shaderProgram, "quadSizeMultiplier");
+        glUniform1f(uniformLoc, quadSizeMultiplier);
 
         glBindVertexArray(VAO);
         if (renderMode == 2) {
