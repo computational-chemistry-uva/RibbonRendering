@@ -66,8 +66,11 @@ void main() {
         specular = pow(max(dot(viewDir, reflectDir), 0.0), 64);
     }
 
-    float depth = vec4(projection * vec4(pos, 1.0)).z;
-    depth = (depth - 0.1) / (100.0 - 0.1); // TODO
-    gl_FragDepth = depth;
     FragColor = vec4(albedo * (diffuse + specular), 1.0);
+
+    // NOTE writing to depth buffer can decrease performance because it prevents early depth test
+    // I can't make it toggleable because setting gl_FragDepth in any branch causes this
+    vec4 clipPos = projection * vec4(pos, 1.0);
+    float depth = clipPos.z / clipPos.w;
+    gl_FragDepth = ((gl_DepthRange.diff * depth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 }
