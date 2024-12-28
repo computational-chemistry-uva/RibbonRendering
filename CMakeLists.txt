@@ -1,4 +1,6 @@
-# CMakeLists.txt
+# Get the workspace folder name
+get_filename_component(WORKSPACE_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+
 cmake_minimum_required(VERSION 3.10)
 project(BiosplinesViewer)
 
@@ -14,29 +16,36 @@ find_package(OpenGL REQUIRED)
 find_package(glfw3 REQUIRED)
 find_package(GLEW REQUIRED)
 
-# Get the workspace folder name
-get_filename_component(WORKSPACE_NAME ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+# Fetch imgui sources
+include(FetchContent)
+FetchContent_Declare(
+  imgui
+  GIT_REPOSITORY https://github.com/ocornut/imgui.git
+  GIT_TAG v1.91.6
+)
+FetchContent_MakeAvailable(imgui)
+
+# Add ImGui sources
+set(IMGUI_SOURCES
+    ${imgui_SOURCE_DIR}/imgui.cpp
+    ${imgui_SOURCE_DIR}/imgui_demo.cpp
+    ${imgui_SOURCE_DIR}/imgui_draw.cpp
+    ${imgui_SOURCE_DIR}/imgui_tables.cpp
+    ${imgui_SOURCE_DIR}/imgui_widgets.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_glfw.cpp
+    ${imgui_SOURCE_DIR}/backends/imgui_impl_opengl3.cpp
+)
+include_directories(${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 
 # Add executable with workspace folder name
-add_executable(${WORKSPACE_NAME} 
-    $ENV{IMGUI_PATH}/imgui.cpp
-    # $ENV{IMGUI_PATH}/imgui_stdlib.cpp
-    $ENV{IMGUI_PATH}/imgui_draw.cpp
-    $ENV{IMGUI_PATH}/imgui_tables.cpp
-    $ENV{IMGUI_PATH}/imgui_widgets.cpp
-    $ENV{IMGUI_PATH}/backends/imgui_impl_glfw.cpp
-    $ENV{IMGUI_PATH}/backends/imgui_impl_opengl3.cpp
-    $ENV{IMGUI_PATH}/imgui_demo.cpp
+add_executable(${WORKSPACE_NAME}
+    ${IMGUI_SOURCES}
     src/main.cpp
 )
 
-# Include directories
-target_include_directories(${WORKSPACE_NAME} PRIVATE ${OPENGL_INCLUDE_DIR})
-
-# Link SFML libraries
-target_link_libraries(${WORKSPACE_NAME}
+# Link libraries
+target_link_libraries(${WORKSPACE_NAME} PRIVATE
     OpenGL::GL
     glfw
-    ${OPENGL_LIBRARIES}
-    ${GLEW_LIBRARIES}
+    GLEW::glew
 )

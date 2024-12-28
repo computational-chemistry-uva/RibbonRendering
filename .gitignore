@@ -1,2 +1,4 @@
 .direnv/
 build/
+_deps/
+.cache/
