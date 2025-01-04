@@ -44,6 +44,7 @@ namespace global {
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods) {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, true);
+    if (ImGui::GetIO().WantCaptureKeyboard) return;
     }
     if (ImGui::GetIO().WantCaptureKeyboard) return;
 }
@@ -272,6 +273,12 @@ int main() {
         "../src/fragment.glsl"
     );
 
+    GLuint impostorWireframeProgram = createShaderProgram(
+        "../src/vertex_passthrough.glsl",
+        "../src/impostor_wireframe_geometry.glsl",
+        "../src/fragment.glsl"
+    );
+
     GLuint impostorProgram = createShaderProgram(
         "../src/vertex_passthrough.glsl",
         "../src/impostor_geometry.glsl",
@@ -282,8 +289,8 @@ int main() {
     float pitch = 30.0f;
     float dist = 5.0f;
     float fov = 45.0f;
-    int renderMode = 2;
-    bool showNormals = false;
+    bool impostors = true;
+    int renderMode = 0;
     float quadSize = 0.5f;
     bool distortionCorrection = true;
     float quadSizeMultiplier = 1.0f;
@@ -302,11 +309,9 @@ int main() {
         // ImGui::SetNextWindowSize({250, 100});
         ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetNextItemWidth(128);
-        ImGui::Combo("Rendering mode", &renderMode, "Wireframe\0Mesh\0Impostor");
-        if (renderMode != 0) {
-            ImGui::Checkbox("Show normals", &showNormals);
-        }
-        if (renderMode == 2) {
+        ImGui::Combo("Rendering mode", &renderMode, "Shaded\0Wireframe\0Normals");
+        ImGui::Checkbox("Impostors", &impostors);
+        if (impostors) {
             ImGui::SetNextItemWidth(128);
             ImGui::SliderFloat("Atom size", &quadSize, 0.1f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
             ImGui::Checkbox("Distortion correction", &distortionCorrection);
@@ -329,10 +334,7 @@ int main() {
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        GLuint shaderProgram = meshProgram;
-        if (renderMode == 0) shaderProgram = wireframeProgram;
-        else if (renderMode == 2) shaderProgram = impostorProgram;
-
+        GLuint shaderProgram = impostors ? (renderMode == 1 ? impostorWireframeProgram : impostorProgram) : (renderMode == 1 ? wireframeProgram : meshProgram);
         glUseProgram(shaderProgram);
 
         // Projection matrix
@@ -368,8 +370,6 @@ int main() {
         glUniform3f(uniformLoc, 3.0f, 3.5f, 2.5f);
         uniformLoc = glGetUniformLocation(shaderProgram, "renderMode");
         glUniform1i(uniformLoc, renderMode);
-        uniformLoc = glGetUniformLocation(shaderProgram, "showNormals");
-        glUniform1i(uniformLoc, showNormals);
         uniformLoc = glGetUniformLocation(shaderProgram, "quadSize");
         glUniform1f(uniformLoc, quadSize);
         uniformLoc = glGetUniformLocation(shaderProgram, "distortionCorrection");
@@ -378,7 +378,7 @@ int main() {
         glUniform1f(uniformLoc, quadSizeMultiplier);
 
         glBindVertexArray(VAO);
-        if (renderMode == 2) {
+        if (impostors) {
             glDrawElements(GL_POINTS, n_indices, GL_UNSIGNED_INT, 0);
         }
         else {

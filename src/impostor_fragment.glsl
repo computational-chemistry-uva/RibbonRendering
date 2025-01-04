@@ -14,7 +14,6 @@ uniform mat4 projection;
 uniform vec3 viewPos;
 uniform vec3 lightPos;
 uniform int renderMode;
-uniform int showNormals;
 uniform float quadSize;
 uniform int distortionCorrection;
 
@@ -53,10 +52,7 @@ void main() {
     vec3 albedo = fCol;
     float diffuse = 1.0;
     float specular = 0.0;
-    if (showNormals != 0) {
-        albedo = normal * 0.5 + 0.5;
-    }
-    else {
+    if (renderMode == 0) {
         vec3 viewDir = normalize(vp - pos);
         vec3 lightDir = normalize(lp - pos);
         vec3 reflectDir = reflect(-lightDir, normal);
@@ -64,6 +60,9 @@ void main() {
         /* diffuse = max(d, (min(d, 0.0) + 1.0) * 0.35); */
         diffuse = mix(0.1, 1.0, max(d, 0.0));
         specular = pow(max(dot(viewDir, reflectDir), 0.0), 64);
+    }
+    else if (renderMode == 2) {
+        albedo = normal * 0.5 + 0.5;
     }
 
     FragColor = vec4(albedo * (diffuse + specular), 1.0);
