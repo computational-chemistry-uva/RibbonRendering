@@ -9,6 +9,7 @@
 #include <sstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <string>
 
 static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
@@ -127,6 +128,80 @@ GLuint createShaderProgram(
     glDeleteShader(fragmentShader);
 
     return shaderProgram;
+}
+
+struct DrawObject {
+    GLuint vao;
+    GLuint vbo;
+    GLuint ibo;
+    unsigned nIndices;
+    GLuint shader;
+    GLuint wireframeShader;
+    unsigned drawMode;
+};
+
+struct Uniforms {
+    glm::mat4 model;
+    glm::mat4 view;
+    glm::mat4 projection;
+    glm::vec3 viewPos;
+    glm::vec3 lightPos;
+    bool drawNormals;
+    float lightIntensity;
+    float sphereRadius;
+    float cylinderRadius;
+    bool raytraced;
+    float sphereQuadSizeFactor;
+    float cylinderExtraQuadLengthFactor;
+};
+
+void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
+    // Set shader
+    GLuint shaderProgram;
+    if (wireframe) {
+        glDepthRange(0.0, 0.01);
+        shaderProgram = object.wireframeShader;
+    }
+    else {
+        glDepthRange(0.0, 1.0);
+        shaderProgram = object.shader;
+    }
+    glUseProgram(shaderProgram);
+
+    // Set uniforms
+    GLint uniformLoc;
+    uniformLoc = glGetUniformLocation(shaderProgram, "model");
+    glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, glm::value_ptr(uniforms.model));
+    uniformLoc = glGetUniformLocation(shaderProgram, "view");
+    glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, glm::value_ptr(uniforms.view));
+    uniformLoc = glGetUniformLocation(shaderProgram, "projection");
+    glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, glm::value_ptr(uniforms.projection));
+    uniformLoc = glGetUniformLocation(shaderProgram, "viewPos");
+    glUniform3f(uniformLoc, uniforms.viewPos.x, uniforms.viewPos.y, uniforms.viewPos.z);
+    uniformLoc = glGetUniformLocation(shaderProgram, "lightPos");
+    glUniform3f(uniformLoc, uniforms.lightPos.x, uniforms.lightPos.y, uniforms.lightPos.z);
+    uniformLoc = glGetUniformLocation(shaderProgram, "drawNormals");
+    glUniform1i(uniformLoc, uniforms.drawNormals);
+    uniformLoc = glGetUniformLocation(shaderProgram, "lightIntensity");
+    glUniform1f(uniformLoc, uniforms.lightIntensity);
+    uniformLoc = glGetUniformLocation(shaderProgram, "sphereRadius");
+    glUniform1f(uniformLoc, uniforms.sphereRadius);
+    uniformLoc = glGetUniformLocation(shaderProgram, "cylinderRadius");
+    glUniform1f(uniformLoc, uniforms.cylinderRadius);
+    uniformLoc = glGetUniformLocation(shaderProgram, "raytraced");
+    glUniform1i(uniformLoc, uniforms.raytraced);
+    uniformLoc = glGetUniformLocation(shaderProgram, "sphereQuadSizeFactor");
+    glUniform1f(uniformLoc, uniforms.sphereQuadSizeFactor);
+    uniformLoc = glGetUniformLocation(shaderProgram, "cylinderExtraQuadLengthFactor");
+    glUniform1f(uniformLoc, uniforms.cylinderExtraQuadLengthFactor);
+
+    // Bind buffers
+    glBindVertexArray(object.vao);
+    glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object.ibo);
+
+    // Draw
+    glDrawElements(object.drawMode, object.nIndices, GL_UNSIGNED_INT, 0);
 }
 
 int main() {
@@ -302,16 +377,51 @@ int main() {
         "../src/cylinder_fragment.glsl"
     );
 
+    DrawObject mesh = {
+        vao,
+        vbo,
+        triangleIbo,
+        nTriangleIndices,
+        meshProgram,
+        meshWireframeProgram,
+        GL_TRIANGLES,
+    };
+    DrawObject spheres = {
+        vao,
+        vbo,
+        pointIbo,
+        nPointIndices,
+        sphereProgram,
+        sphereWireframeProgram,
+        GL_POINTS,
+    };
+    DrawObject cylinders = {
+        vao,
+        vbo,
+        lineIbo,
+        nLineIndices,
+        cylinderProgram,
+        cylinderWireframeProgram,
+        GL_LINES,
+    };
+
+    Uniforms uniforms;
+
     float yaw = -45.0f;
     float pitch = 30.0f;
     float dist = 5.0f;
     float fov = 45.0f;
-    int impostors = 2;
-    int renderMode = 0; // TODO Checkboxes for drawNormals and wireframe, draw wireframe on top
-    float sphereRadius = 0.25f;
-    float cylinderRadius = 0.25f;
-    bool raytraced = true;
-    float quadSizeMultiplier = 1.0f;
+    bool drawWireframes = false;
+    bool drawMesh = false;
+    bool drawSpheres = true;
+    bool drawCylinders = true;
+    uniforms.drawNormals = false;
+    uniforms.lightIntensity = 1.0f;
+    uniforms.sphereRadius = 0.25f;
+    uniforms.cylinderRadius = 0.1f;
+    uniforms.raytraced = true;
+    uniforms.sphereQuadSizeFactor = 1.0f;
+    uniforms.cylinderExtraQuadLengthFactor = 0.0f;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -324,27 +434,51 @@ int main() {
         ImGui::NewFrame();
 
         ImGui::SetNextWindowPos({0, 0});
-        // ImGui::SetNextWindowSize({250, 100});
         ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
+
+        ImGui::Text("Objects");
+        ImGui::Indent();
+        ImGui::Checkbox("Mesh", &drawMesh);
+        ImGui::Checkbox("Spheres", &drawSpheres);
+        ImGui::Checkbox("Cylinders", &drawCylinders);
+        ImGui::Unindent();
+
+        ImGui::Spacing();
+        ImGui::Text("Draw settings");
+        ImGui::Indent();
+        ImGui::Checkbox("Draw wireframes", &drawWireframes);
+        ImGui::Checkbox("Draw normals", &uniforms.drawNormals);
         ImGui::SetNextItemWidth(128);
-        ImGui::Combo("Impostors", &impostors, "Off\0Spheres\0Cylinders\0");
+        if (uniforms.drawNormals) ImGui::BeginDisabled();
+        ImGui::SliderFloat("Light Intensity", &uniforms.lightIntensity, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        if (uniforms.drawNormals) ImGui::EndDisabled();
+        ImGui::Unindent();
+
+        if (!drawSpheres) ImGui::BeginDisabled();
+        ImGui::Spacing();
+        ImGui::Text("Sphere impostors");
+        ImGui::Indent();
         ImGui::SetNextItemWidth(128);
-        ImGui::Combo("Rendering mode", &renderMode, "Shaded\0Wireframe\0Normals\0");
-        if (impostors == 1) {
+        ImGui::SliderFloat("Sphere radius", &uniforms.sphereRadius, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        ImGui::Checkbox("Ray traced", &uniforms.raytraced);
+        if (uniforms.raytraced) {
             ImGui::SetNextItemWidth(128);
-            ImGui::SliderFloat("Radius", &sphereRadius, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
-            ImGui::Checkbox("Ray traced", &raytraced);
-            if (raytraced) {
-                ImGui::SetNextItemWidth(128);
-                ImGui::SliderFloat("Extra quad size factor", &quadSizeMultiplier, 1.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
-            }
+            ImGui::SliderFloat("Quad size factor", &uniforms.sphereQuadSizeFactor, 1.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
         }
-        else if (impostors == 2) {
-            ImGui::SetNextItemWidth(128);
-            ImGui::SliderFloat("Radius", &cylinderRadius, 0.1f, 0.5f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
-            ImGui::SetNextItemWidth(128);
-            ImGui::SliderFloat("Extra quad size factor", &quadSizeMultiplier, 1.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
-        }
+        ImGui::Unindent();
+        if (!drawSpheres) ImGui::EndDisabled();
+
+        if (!drawCylinders) ImGui::BeginDisabled();
+        ImGui::Spacing();
+        ImGui::Text("Cylinder impostors");
+        ImGui::Indent();
+        ImGui::SetNextItemWidth(128);
+        ImGui::SliderFloat("Cylinder radius", &uniforms.cylinderRadius, 0.05f, 0.25f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        ImGui::SetNextItemWidth(128);
+        ImGui::SliderFloat("Extra quad length factor", &uniforms.cylinderExtraQuadLengthFactor, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        ImGui::Unindent();
+        if (!drawCylinders) ImGui::EndDisabled();
+
         ImGui::End();
 
         if (global::mouse.leftButtonDown) {
@@ -356,76 +490,38 @@ int main() {
         dist = (1.0f - 0.25f * global::mouse.dscroll) * dist;
         dist = glm::clamp(dist, 1.0f, 10.0f);
 
-        // Clear screen
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        GLuint shaderProgram;
-        if (impostors == 0) {
-            shaderProgram = renderMode == 1 ? meshWireframeProgram : meshProgram;
-        }
-        else if (impostors == 1) {
-            shaderProgram = renderMode == 1 ? sphereWireframeProgram : sphereProgram;
-        }
-        else if (impostors == 2) {
-            shaderProgram = renderMode == 1 ? cylinderWireframeProgram : cylinderProgram;
-        }
-        glUseProgram(shaderProgram);
-
         // Projection matrix
         int w, h;
         glfwGetWindowSize(window, &w, &h);
-        glm::mat4 projection = glm::perspective(
-            glm::radians(fov),  // Field of view
-            float(w) / float(h),  // Aspect ratio
-            0.1f,                 // Near plane
-            100.0f                // Far plane
+        uniforms.projection = glm::perspective(
+            glm::radians(fov),   // Field of view
+            float(w) / float(h), // Aspect ratio
+            0.1f,                // Near plane
+            100.0f               // Far plane
         );
         // View matrix
-        glm::mat4 view = glm::mat4(1.0f);
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -dist));
-        view = glm::rotate(view, glm::radians(pitch), glm::vec3(1.0f, 0.0f, 0.0f));
-        view = glm::rotate(view, glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::vec4 viewPos = glm::inverse(view) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        uniforms.view = glm::mat4(1.0f);
+        uniforms.view = glm::translate(uniforms.view, glm::vec3(0.0f, 0.0f, -dist));
+        uniforms.view = glm::rotate(uniforms.view, glm::radians(pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+        uniforms.view = glm::rotate(uniforms.view, glm::radians(yaw), glm::vec3(0.0f, 1.0f, 0.0f));
         // Model matrix
-        glm::mat4 model = glm::mat4(1.0f);
-        // model = glm::rotate(model, glm::radians(45.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-        // Set uniforms
-        GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
-        GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
-        GLint projectionLoc = glGetUniformLocation(shaderProgram, "projection");
-        glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
-        glUniformMatrix4fv(projectionLoc, 1, GL_FALSE, glm::value_ptr(projection));
+        uniforms.model = glm::mat4(1.0f);
 
-        GLint uniformLoc;
-        uniformLoc = glGetUniformLocation(shaderProgram, "viewPos");
-        glUniform3f(uniformLoc, viewPos.x, viewPos.y, viewPos.z);
-        uniformLoc = glGetUniformLocation(shaderProgram, "lightPos");
-        glUniform3f(uniformLoc, 3.0f, 3.5f, 2.5f);
-        uniformLoc = glGetUniformLocation(shaderProgram, "renderMode");
-        glUniform1i(uniformLoc, renderMode);
-        uniformLoc = glGetUniformLocation(shaderProgram, "sphereRadius");
-        glUniform1f(uniformLoc, sphereRadius);
-        uniformLoc = glGetUniformLocation(shaderProgram, "cylinderRadius");
-        glUniform1f(uniformLoc, cylinderRadius);
-        uniformLoc = glGetUniformLocation(shaderProgram, "raytraced");
-        glUniform1i(uniformLoc, raytraced);
-        uniformLoc = glGetUniformLocation(shaderProgram, "quadSizeMultiplier");
-        glUniform1f(uniformLoc, quadSizeMultiplier);
+        // Camera and light positions
+        uniforms.viewPos = glm::inverse(uniforms.view) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+        uniforms.lightPos = glm::vec3(3.0f, 3.5f, 2.5f);
 
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        if (impostors == 0) {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangleIbo);
-            glDrawElements(GL_TRIANGLES, nTriangleIndices, GL_UNSIGNED_INT, 0);
-        }
-        else if (impostors == 1) {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pointIbo);
-            glDrawElements(GL_POINTS, nTriangleIndices, GL_UNSIGNED_INT, 0);
-        }
-        else if (impostors == 2) {
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lineIbo);
-            glDrawElements(GL_LINES, nTriangleIndices, GL_UNSIGNED_INT, 0);
+        // Clear screen
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Draw objects
+        if (drawMesh) draw(mesh, uniforms, false);
+        if (drawSpheres) draw(spheres, uniforms, false);
+        if (drawCylinders) draw(cylinders, uniforms, false);
+        if (drawWireframes) {
+            if (drawMesh) draw(mesh, uniforms, true);
+            if (drawSpheres) draw(spheres, uniforms, true);
+            if (drawCylinders) draw(cylinders, uniforms, true);
         }
 
         ImGui::Render();

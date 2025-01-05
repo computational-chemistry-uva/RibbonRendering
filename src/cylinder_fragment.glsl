@@ -15,7 +15,8 @@ uniform mat4 projection;
 
 uniform vec3 viewPos;
 uniform vec3 lightPos;
-uniform int renderMode;
+uniform float lightIntensity;
+uniform int drawNormals;
 uniform float cylinderRadius;
 uniform int distortionCorrection;
 
@@ -50,20 +51,19 @@ void main() {
     vec3 albedo = fCol;
     float diffuse = 1.0;
     float specular = 0.0;
-    if (renderMode == 0) {
+    if (drawNormals != 0) {
+        FragColor = vec4(normal * 0.5 + 0.5, 1.0);
+    }
+    else {
         vec3 viewDir = normalize(vp - pos);
         vec3 lightDir = normalize(lp - pos);
         vec3 reflectDir = reflect(-lightDir, normal);
         float d = dot(normal, lightDir);
-        /* diffuse = max(d, (min(d, 0.0) + 1.0) * 0.35); */
-        diffuse = mix(0.1, 1.0, max(d, 0.0));
+        float ambient = 0.1;
+        diffuse = max(d, 0.0);
         specular = pow(max(dot(viewDir, reflectDir), 0.0), 64);
+        FragColor = vec4(albedo * (ambient + (diffuse + specular) * lightIntensity), 1.0);
     }
-    else if (renderMode == 2) {
-        albedo = normal * 0.5 + 0.5;
-    }
-
-    FragColor = vec4(albedo * (diffuse + specular), 1.0);
 
     // NOTE writing to depth buffer can decrease performance because it prevents early depth test
     // I can't make it toggleable because setting gl_FragDepth in any branch causes this

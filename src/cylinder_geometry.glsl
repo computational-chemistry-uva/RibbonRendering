@@ -7,7 +7,7 @@ uniform mat4 view;
 uniform mat4 projection;
 uniform vec3 viewPos;
 uniform float cylinderRadius;
-uniform float quadSizeMultiplier;
+uniform float cylinderExtraQuadLengthFactor;
 /* uniform float time; */
 
 /* in vec3 vPos[]; */
@@ -42,12 +42,12 @@ void main() {
 
     for (int i = 0; i < 4; i++) {
         vec2 coords = offsets[i];
-        vec3 pos = centerPos + coords.x * u * quadSizeMultiplier + coords.y * v * quadSizeMultiplier;
+        vec3 pos = centerPos + coords.x * u + coords.y * v + coords.y * normalize(v) * cylinderRadius * cylinderExtraQuadLengthFactor;
         gl_Position = projection * view * vec4(pos, 1.0);
         fPos = pos;
         fNorm = worldNormal;
         fCol = vec3(1.0);
-        fCoord = coords * quadSizeMultiplier;
+        fCoord = coords * cylinderExtraQuadLengthFactor;
         fOrigin = centerPos;
 
         fPos = vec3(view * vec4(fPos, 1.0));

@@ -6,7 +6,7 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 uniform float sphereRadius;
-uniform float quadSizeMultiplier;
+uniform float sphereQuadSizeFactor;
 /* uniform float time; */
 
 /* in vec3 vPos[]; */
@@ -35,12 +35,12 @@ void main() {
     int verts[] = int[](0, 1, 3, 2, 0);
     for (int i = 0; i < 5; i++) {
         vec2 coords = offsets[verts[i]];
-        vec3 pos = worldPos + coords.x * sphereRadius * quadSizeMultiplier * viewRight + coords.y * sphereRadius * quadSizeMultiplier * viewUp;
+        vec3 pos = worldPos + coords.x * sphereRadius * sphereQuadSizeFactor * viewRight + coords.y * sphereRadius * sphereQuadSizeFactor * viewUp;
         gl_Position = projection * view * vec4(pos, 1.0);
         fPos = pos;
         fNorm = worldNormal;
         fCol = vec3(1.0);
-        fCoord = coords * quadSizeMultiplier;
+        fCoord = coords * sphereQuadSizeFactor;
         fOrigin = worldPos;
 
         fPos = vec3(view * vec4(fPos, 1.0));
