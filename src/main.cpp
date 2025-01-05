@@ -131,7 +131,7 @@ GLuint createShaderProgram(
 
 int main() {
     glfwSetErrorCallback(glfw_error_callback);
-    
+
     // Initialize GLFW
     if (!glfwInit()) {
         return 1;
@@ -186,111 +186,128 @@ int main() {
 
     // Cube vertex data: positions (x, y, z) and normals (nx, ny, nz)
     float vertices[] = {
-        // Front face
-        -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, // Bottom-left
-         0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, // Bottom-right
-         0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, // Top-right
-        -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, // Top-left
-
-        // Back face
-        -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, // Bottom-left
-         0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, // Bottom-right
-         0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, // Top-right
-        -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, // Top-left
-
-        // Left face
-        -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, // Bottom-left
-        -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, // Bottom-right
-        -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, // Top-right
-        -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f, // Top-left
-
-        // Right face
-         0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, // Bottom-left
-         0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, // Bottom-right
-         0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, // Top-right
-         0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f, // Top-left
-
-        // Top face
-        -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, // Bottom-left
-         0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, // Bottom-right
-         0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, // Top-right
-        -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, // Top-left
-
-        // Bottom face
-        -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, // Bottom-left
-         0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, // Bottom-right
-         0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, // Top-right
-        -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f  // Top-left
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f,  0.5f,
+        -0.5f,  0.5f, -0.5f,
+        -0.5f,  0.5f,  0.5f,
+         0.5f, -0.5f, -0.5f,
+         0.5f, -0.5f,  0.5f,
+         0.5f,  0.5f, -0.5f,
+         0.5f,  0.5f,  0.5f,
     };
 
     // Indices for rendering the cube using triangle primitives
-    unsigned int indices[] = {
-        // Front face
-        0, 1, 2,  2, 3, 0,
-        // Back face
-        4, 5, 6,  6, 7, 4,
-        // Left face
-        8, 9, 10, 10, 11, 8,
-        // Right face
-        12, 13, 14, 14, 15, 12,
-        // Top face
-        16, 17, 18, 18, 19, 16,
-        // Bottom face
-        20, 21, 22, 22, 23, 20
+    unsigned int triangleIndices[] = {
+        0, 1, 3,
+        3, 2, 0,
+        4, 6, 7,
+        7, 5, 4,
+        0, 4, 5,
+        5, 1, 0,
+        2, 3, 7,
+        7, 6, 2,
+        0, 2, 6,
+        6, 4, 0,
+        1, 5, 7,
+        7, 3, 1,
     };
+    unsigned int nTriangleIndices = 36;
 
-    unsigned int n_indices = 36;
+    // Indices for rendering the cube using point primitives
+    unsigned int pointIndices[] = {
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+    };
+    unsigned int nPointIndices = 8;
 
-    // Create Vertex Array Object (VAO)
-    GLuint VAO, VBO, IBO;
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
-    glGenBuffers(1, &IBO);
+    // Indices for rendering the cube using line primitives
+    unsigned int lineIndices[] = {
+        0, 1,
+        2, 3,
+        4, 5,
+        6, 7,
+        0, 2,
+        1, 3,
+        4, 6,
+        5, 7,
+        0, 4,
+        1, 5,
+        2, 6,
+        3, 7,
+    };
+    unsigned int nLineIndices = 24;
+
+    // Create buffers
+    GLuint vao, vbo, triangleIbo, pointIbo, lineIbo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    glGenBuffers(1, &triangleIbo);
+    glGenBuffers(1, &pointIbo);
+    glGenBuffers(1, &lineIbo);
     // Bind VAO first
-    glBindVertexArray(VAO);
+    glBindVertexArray(vao);
     // Bind and fill VBO
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    // Bind and fill IBO
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
-    // Color attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
+    // Bind and fill IBOs
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangleIbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(triangleIndices), triangleIndices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pointIbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pointIndices), pointIndices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lineIbo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(lineIndices), lineIndices, GL_STATIC_DRAW);
 
-    GLuint wireframeProgram = createShaderProgram(
-        "../src/vertex.glsl",
-        "../src/wireframe_geometry.glsl",
-        "../src/fragment.glsl"
+    GLuint meshWireframeProgram = createShaderProgram(
+        "../src/mesh_vertex.glsl",
+        "../src/mesh_wireframe_geometry.glsl",
+        "../src/wireframe_fragment.glsl"
     );
 
     GLuint meshProgram = createShaderProgram(
-        "../src/vertex.glsl",
-        "../src/geometry.glsl",
-        "../src/fragment.glsl"
+        "../src/mesh_vertex.glsl",
+        "../src/mesh_geometry.glsl",
+        "../src/mesh_fragment.glsl"
     );
 
-    GLuint impostorWireframeProgram = createShaderProgram(
-        "../src/vertex_passthrough.glsl",
-        "../src/impostor_wireframe_geometry.glsl",
-        "../src/fragment.glsl"
+    GLuint sphereWireframeProgram = createShaderProgram(
+        "../src/passthrough_vertex.glsl",
+        "../src/sphere_wireframe_geometry.glsl",
+        "../src/wireframe_fragment.glsl"
     );
 
-    GLuint impostorProgram = createShaderProgram(
-        "../src/vertex_passthrough.glsl",
-        "../src/impostor_geometry.glsl",
-        "../src/impostor_fragment.glsl"
+    GLuint sphereProgram = createShaderProgram(
+        "../src/passthrough_vertex.glsl",
+        "../src/sphere_geometry.glsl",
+        "../src/sphere_fragment.glsl"
+    );
+
+    GLuint cylinderWireframeProgram = createShaderProgram(
+        "../src/passthrough_vertex.glsl",
+        "../src/cylinder_wireframe_geometry.glsl",
+        "../src/wireframe_fragment.glsl"
+    );
+
+    GLuint cylinderProgram = createShaderProgram(
+        "../src/passthrough_vertex.glsl",
+        "../src/cylinder_geometry.glsl",
+        "../src/cylinder_fragment.glsl"
     );
 
     float yaw = -45.0f;
     float pitch = 30.0f;
     float dist = 5.0f;
     float fov = 45.0f;
-    bool impostors = true;
-    int renderMode = 0;
+    int impostors = 2;
+    int renderMode = 0; // TODO Checkboxes for drawNormals and wireframe, draw wireframe on top
     float quadSize = 0.5f;
     bool distortionCorrection = true;
     float quadSizeMultiplier = 1.0f;
@@ -309,8 +326,8 @@ int main() {
         // ImGui::SetNextWindowSize({250, 100});
         ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetNextItemWidth(128);
-        ImGui::Combo("Rendering mode", &renderMode, "Shaded\0Wireframe\0Normals");
-        ImGui::Checkbox("Impostors", &impostors);
+        ImGui::Combo("Rendering mode", &renderMode, "Shaded\0Wireframe\0Normals\0");
+        ImGui::Combo("Impostors", &impostors, "Off\0Spheres\0Cylinders\0");
         if (impostors) {
             ImGui::SetNextItemWidth(128);
             ImGui::SliderFloat("Atom size", &quadSize, 0.1f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
@@ -334,7 +351,16 @@ int main() {
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        GLuint shaderProgram = impostors ? (renderMode == 1 ? impostorWireframeProgram : impostorProgram) : (renderMode == 1 ? wireframeProgram : meshProgram);
+        GLuint shaderProgram;
+        if (impostors == 0) {
+            shaderProgram = renderMode == 1 ? meshWireframeProgram : meshProgram;
+        }
+        else if (impostors == 1) {
+            shaderProgram = renderMode == 1 ? sphereWireframeProgram : sphereProgram;
+        }
+        else if (impostors == 2) {
+            shaderProgram = renderMode == 1 ? cylinderWireframeProgram : cylinderProgram;
+        }
         glUseProgram(shaderProgram);
 
         // Projection matrix
@@ -377,12 +403,19 @@ int main() {
         uniformLoc = glGetUniformLocation(shaderProgram, "quadSizeMultiplier");
         glUniform1f(uniformLoc, quadSizeMultiplier);
 
-        glBindVertexArray(VAO);
-        if (impostors) {
-            glDrawElements(GL_POINTS, n_indices, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        if (impostors == 0) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangleIbo);
+            glDrawElements(GL_TRIANGLES, nTriangleIndices, GL_UNSIGNED_INT, 0);
         }
-        else {
-            glDrawElements(GL_TRIANGLES, n_indices, GL_UNSIGNED_INT, 0);
+        else if (impostors == 1) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pointIbo);
+            glDrawElements(GL_POINTS, nTriangleIndices, GL_UNSIGNED_INT, 0);
+        }
+        else if (impostors == 2) {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lineIbo);
+            glDrawElements(GL_LINES, nTriangleIndices, GL_UNSIGNED_INT, 0);
         }
 
         ImGui::Render();
