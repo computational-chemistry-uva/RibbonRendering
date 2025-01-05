@@ -308,8 +308,9 @@ int main() {
     float fov = 45.0f;
     int impostors = 2;
     int renderMode = 0; // TODO Checkboxes for drawNormals and wireframe, draw wireframe on top
-    float quadSize = 0.5f;
-    bool distortionCorrection = true;
+    float sphereRadius = 0.25f;
+    float cylinderRadius = 0.25f;
+    bool raytraced = true;
     float quadSizeMultiplier = 1.0f;
 
     // Main loop
@@ -326,16 +327,23 @@ int main() {
         // ImGui::SetNextWindowSize({250, 100});
         ImGui::Begin("Debug", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
         ImGui::SetNextItemWidth(128);
-        ImGui::Combo("Rendering mode", &renderMode, "Shaded\0Wireframe\0Normals\0");
         ImGui::Combo("Impostors", &impostors, "Off\0Spheres\0Cylinders\0");
-        if (impostors) {
+        ImGui::SetNextItemWidth(128);
+        ImGui::Combo("Rendering mode", &renderMode, "Shaded\0Wireframe\0Normals\0");
+        if (impostors == 1) {
             ImGui::SetNextItemWidth(128);
-            ImGui::SliderFloat("Atom size", &quadSize, 0.1f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
-            ImGui::Checkbox("Distortion correction", &distortionCorrection);
-            if (distortionCorrection) {
+            ImGui::SliderFloat("Radius", &sphereRadius, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+            ImGui::Checkbox("Ray traced", &raytraced);
+            if (raytraced) {
                 ImGui::SetNextItemWidth(128);
                 ImGui::SliderFloat("Extra quad size factor", &quadSizeMultiplier, 1.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
             }
+        }
+        else if (impostors == 2) {
+            ImGui::SetNextItemWidth(128);
+            ImGui::SliderFloat("Radius", &cylinderRadius, 0.1f, 0.5f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+            ImGui::SetNextItemWidth(128);
+            ImGui::SliderFloat("Extra quad size factor", &quadSizeMultiplier, 1.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
         }
         ImGui::End();
 
@@ -396,10 +404,12 @@ int main() {
         glUniform3f(uniformLoc, 3.0f, 3.5f, 2.5f);
         uniformLoc = glGetUniformLocation(shaderProgram, "renderMode");
         glUniform1i(uniformLoc, renderMode);
-        uniformLoc = glGetUniformLocation(shaderProgram, "quadSize");
-        glUniform1f(uniformLoc, quadSize);
-        uniformLoc = glGetUniformLocation(shaderProgram, "distortionCorrection");
-        glUniform1i(uniformLoc, distortionCorrection);
+        uniformLoc = glGetUniformLocation(shaderProgram, "sphereRadius");
+        glUniform1f(uniformLoc, sphereRadius);
+        uniformLoc = glGetUniformLocation(shaderProgram, "cylinderRadius");
+        glUniform1f(uniformLoc, cylinderRadius);
+        uniformLoc = glGetUniformLocation(shaderProgram, "raytraced");
+        glUniform1i(uniformLoc, raytraced);
         uniformLoc = glGetUniformLocation(shaderProgram, "quadSizeMultiplier");
         glUniform1f(uniformLoc, quadSizeMultiplier);
 

@@ -6,6 +6,8 @@ in vec3 fNorm;
 in vec3 fCol;
 in vec2 fCoord;
 in vec3 fOrigin;
+in vec3 a;
+in vec3 b;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -14,41 +16,34 @@ uniform mat4 projection;
 uniform vec3 viewPos;
 uniform vec3 lightPos;
 uniform int renderMode;
-uniform float quadSize;
+uniform float cylinderRadius;
 uniform int distortionCorrection;
 
 void main() {
-    FragColor = vec4(1.0);
-    return;
-
-    vec3 pos;
-    vec3 normal;
-    if (distortionCorrection != 0) {
-        vec3 d = normalize(fPos);
-        vec3 s = fOrigin;
-        float a = 1.0;
-        float b = -2.0 * dot(d, s);
-        float c = dot(s, s) - (0.5 * quadSize) * (0.5 * quadSize);
-        float discriminant = b * b - 4.0 * a * c;
-        if (discriminant < 0.0) {
-            discard;
-        }
-        float t0 = (-b + sqrt(discriminant)) / 2.0 * a;
-        float t1 = (-b - sqrt(discriminant)) / 2.0 * a;
-        float t = min(t0, t1);
-        pos = t * d;
-        normal = normalize(pos - fOrigin);
+    vec3 d = normalize(fPos);
+    vec3 v = normalize(b - a);
+    vec3 x = -a;
+    float A = 1.0 - dot(v, d) * dot(v, d);
+    float B = 2.0 * (dot(d, x) - dot(v, d) * dot(v, x));
+    float C = dot(x, x) - dot(v, x) * dot(v, x) - cylinderRadius * cylinderRadius;
+    float discriminant = B * B - 4.0 * A * C;
+    if (discriminant < 0.0) {
+        discard;
     }
-    else {
-        float distSqr = dot(fCoord, fCoord);
-        if (distSqr > 1.0) {
-            discard;
-        }
-        pos = fPos + fNorm * sqrt(1.0 - distSqr) * 0.5 * quadSize;
-        normal = normalize(pos - fOrigin);
-    }
+    float t0 = (-B + sqrt(discriminant)) / (2.0 * A);
+    float t1 = (-B - sqrt(discriminant)) / (2.0 * A);
+    float t = min(t0, t1);
+    vec3 pos = t * d;
 
-    /* vec3 vp = vec3(view * vec4(viewPos, 1.0)); */
+    vec3 ab = b - a;
+    vec3 ap = pos - a;
+    float ct = dot(ab, ap) / dot(ab, ab);
+    if (ct < 0.0 || ct > 1.0) {
+        discard;
+    }
+    vec3 p = a + ct * ab;
+    vec3 normal = normalize(pos - p);
+
     vec3 vp = vec3(0.0);
     vec3 lp = vec3(view * vec4(lightPos, 1.0));
 

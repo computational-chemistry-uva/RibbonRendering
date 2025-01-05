@@ -5,7 +5,7 @@ layout (line_strip, max_vertices = 7) out;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-uniform float quadSize;
+uniform float sphereRadius;
 uniform float quadSizeMultiplier;
 /* uniform float time; */
 
@@ -35,7 +35,7 @@ void main() {
     int verts[] = int[](0, 1, 3, 2, 0);
     for (int i = 0; i < 5; i++) {
         vec2 coords = offsets[verts[i]];
-        vec3 pos = worldPos + coords.x * 0.5 * quadSize * quadSizeMultiplier * viewRight + coords.y * 0.5 * quadSize * quadSizeMultiplier * viewUp;
+        vec3 pos = worldPos + coords.x * sphereRadius * quadSizeMultiplier * viewRight + coords.y * sphereRadius * quadSizeMultiplier * viewUp;
         gl_Position = projection * view * vec4(pos, 1.0);
         fPos = pos;
         fNorm = worldNormal;

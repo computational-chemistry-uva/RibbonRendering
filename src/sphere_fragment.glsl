@@ -14,24 +14,24 @@ uniform mat4 projection;
 uniform vec3 viewPos;
 uniform vec3 lightPos;
 uniform int renderMode;
-uniform float quadSize;
-uniform int distortionCorrection;
+uniform float sphereRadius;
+uniform int raytraced;
 
 void main() {
     vec3 pos;
     vec3 normal;
-    if (distortionCorrection != 0) {
+    if (raytraced != 0) {
         vec3 d = normalize(fPos);
         vec3 s = fOrigin;
         float a = 1.0;
         float b = -2.0 * dot(d, s);
-        float c = dot(s, s) - (0.5 * quadSize) * (0.5 * quadSize);
+        float c = dot(s, s) - sphereRadius * sphereRadius;
         float discriminant = b * b - 4.0 * a * c;
         if (discriminant < 0.0) {
             discard;
         }
-        float t0 = (-b + sqrt(discriminant)) / 2.0 * a;
-        float t1 = (-b - sqrt(discriminant)) / 2.0 * a;
+        float t0 = (-b + sqrt(discriminant)) / (2.0 * a);
+        float t1 = (-b - sqrt(discriminant)) / (2.0 * a);
         float t = min(t0, t1);
         pos = t * d;
         normal = normalize(pos - fOrigin);
@@ -41,7 +41,7 @@ void main() {
         if (distSqr > 1.0) {
             discard;
         }
-        pos = fPos + fNorm * sqrt(1.0 - distSqr) * 0.5 * quadSize;
+        pos = fPos + fNorm * sqrt(1.0 - distSqr) * sphereRadius;
         normal = normalize(pos - fOrigin);
     }
 
