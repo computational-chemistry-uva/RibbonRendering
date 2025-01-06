@@ -17,6 +17,7 @@ out vec3 fPos;
 out vec3 fNorm;
 out vec3 fCol;
 out vec2 fCoord;
+out vec3 bCoord; // Barycentric coordinates, for wireframe shader
 out vec3 fOrigin;
 out vec3 a;
 out vec3 b;
@@ -40,6 +41,13 @@ void main() {
         vec2( 1.0,  1.0)
     );
 
+    vec3 barycentric[4] = vec3[](
+        vec3(0.0, 0.0, 1.0),
+        vec3(1.0, 0.0, 0.0),
+        vec3(0.0, 1.0, 0.0),
+        vec3(0.0, 0.0, 1.0)
+    );
+
     for (int i = 0; i < 4; i++) {
         vec2 coords = offsets[i];
         vec3 pos = centerPos + coords.x * u + coords.y * v + coords.y * normalize(v) * cylinderRadius * cylinderExtraQuadLengthFactor;
@@ -48,6 +56,7 @@ void main() {
         fNorm = worldNormal;
         fCol = vec3(1.0);
         fCoord = coords * cylinderExtraQuadLengthFactor;
+        bCoord = barycentric[i];
         fOrigin = centerPos;
 
         fPos = vec3(view * vec4(fPos, 1.0));

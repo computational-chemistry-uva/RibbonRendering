@@ -236,6 +236,9 @@ int main() {
     // Depth testing
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+    // Alpha blending
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     // MSAA
     // glEnable(GL_MULTISAMPLE);
 
@@ -343,7 +346,7 @@ int main() {
 
     GLuint meshWireframeProgram = createShaderProgram(
         "../src/mesh_vertex.glsl",
-        "../src/mesh_wireframe_geometry.glsl",
+        "../src/mesh_geometry.glsl",
         "../src/wireframe_fragment.glsl"
     );
 
@@ -355,7 +358,7 @@ int main() {
 
     GLuint sphereWireframeProgram = createShaderProgram(
         "../src/passthrough_vertex.glsl",
-        "../src/sphere_wireframe_geometry.glsl",
+        "../src/sphere_geometry.glsl",
         "../src/wireframe_fragment.glsl"
     );
 
@@ -367,7 +370,7 @@ int main() {
 
     GLuint cylinderWireframeProgram = createShaderProgram(
         "../src/passthrough_vertex.glsl",
-        "../src/cylinder_wireframe_geometry.glsl",
+        "../src/cylinder_geometry.glsl",
         "../src/wireframe_fragment.glsl"
     );
 
@@ -461,10 +464,10 @@ int main() {
         ImGui::SetNextItemWidth(128);
         ImGui::SliderFloat("Sphere radius", &uniforms.sphereRadius, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
         ImGui::Checkbox("Ray traced", &uniforms.raytraced);
-        if (uniforms.raytraced) {
-            ImGui::SetNextItemWidth(128);
-            ImGui::SliderFloat("Quad size factor", &uniforms.sphereQuadSizeFactor, 1.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
-        }
+        if (!uniforms.raytraced) ImGui::BeginDisabled();
+        ImGui::SetNextItemWidth(128);
+        ImGui::SliderFloat("Quad size factor", &uniforms.sphereQuadSizeFactor, 1.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        if (!uniforms.raytraced) ImGui::EndDisabled();
         ImGui::Unindent();
         if (!drawSpheres) ImGui::EndDisabled();
 

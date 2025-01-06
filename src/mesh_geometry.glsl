@@ -9,17 +9,24 @@ in vec3 vPos[];
 out vec3 fPos;
 out vec3 fNorm;
 out vec3 fCol;
+out vec3 bCoord; // Barycentric coordinates, for wireframe shader
 
 void main() {
     vec3 u = vPos[1] - vPos[0];
     vec3 v = vPos[2] - vPos[0];
     vec3 normal = normalize(cross(u, v));
+    vec3 barycentric[3] = vec3[](
+        vec3(1.0, 0.0, 0.0),
+        vec3(0.0, 0.0, 1.0),
+        vec3(0.0, 1.0, 0.0)
+    );
     for (int i = 0; i < 3; i++) {
         vec4 pos = gl_in[i].gl_Position;
         gl_Position = pos;
         fPos = vPos[i];
         fNorm = normal;
         fCol = vec3(1.0);
+        bCoord = barycentric[i];
         EmitVertex();
     }
     EndPrimitive();
