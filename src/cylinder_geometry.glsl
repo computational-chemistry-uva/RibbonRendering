@@ -60,10 +60,12 @@ void main() {
     // Could omit the first or last two verts depending on which side is facing the camera, but backface culling also takes care of this
     for (int i = 0; i < 8; i++) {
         vec3 coords = offsets[i];
-        vec3 pos = centerPos + u * coords.x + coords.y * v + worldNormal * coords.z * cylinderRadius;
+        vec3 pos = centerPos + u * coords.x + coords.y * normalize(v) * (length(v) + cylinderRadius) + worldNormal * coords.z * cylinderRadius;
         gl_Position = projection * view * vec4(pos, 1.0);
         fPos = pos;
-        //fNorm = worldNormal;
+        //if (i < 2) fNorm = -normalize(v);
+        //else if (i < 6) fNorm = worldNormal;
+        //else fNorm = normalize(v);
         fCol = vec3(1.0);
         //fCoord = coords.xy;
         bCoord = barycentric[i];

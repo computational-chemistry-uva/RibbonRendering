@@ -149,8 +149,9 @@ struct Uniforms {
     bool drawNormals;
     float lightIntensity;
     float sphereRadius;
-    float cylinderRadius;
     bool raytraced;
+    float cylinderRadius;
+    bool endCaps;
 };
 
 void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
@@ -186,10 +187,12 @@ void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
     glUniform1f(uniformLoc, uniforms.lightIntensity);
     uniformLoc = glGetUniformLocation(shaderProgram, "sphereRadius");
     glUniform1f(uniformLoc, uniforms.sphereRadius);
-    uniformLoc = glGetUniformLocation(shaderProgram, "cylinderRadius");
-    glUniform1f(uniformLoc, uniforms.cylinderRadius);
     uniformLoc = glGetUniformLocation(shaderProgram, "raytraced");
     glUniform1i(uniformLoc, uniforms.raytraced);
+    uniformLoc = glGetUniformLocation(shaderProgram, "cylinderRadius");
+    glUniform1f(uniformLoc, uniforms.cylinderRadius);
+    uniformLoc = glGetUniformLocation(shaderProgram, "endCaps");
+    glUniform1i(uniformLoc, uniforms.endCaps);
 
     // Bind buffers
     glBindVertexArray(object.vao);
@@ -412,15 +415,16 @@ int main() {
     float pitch = 30.0f;
     float dist = 5.0f;
     float fov = 45.0f;
-    bool drawWireframes = true;
+    bool drawWireframes = false;
     bool drawMesh = false;
     bool drawSpheres = false;
     bool drawCylinders = true;
     uniforms.drawNormals = false;
     uniforms.lightIntensity = 1.0f;
     uniforms.sphereRadius = 0.25f;
-    uniforms.cylinderRadius = 0.1f;
     uniforms.raytraced = true;
+    uniforms.cylinderRadius = 0.1f;
+    uniforms.endCaps = true;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -469,6 +473,7 @@ int main() {
         ImGui::Indent();
         ImGui::SetNextItemWidth(128);
         ImGui::SliderFloat("Cylinder radius", &uniforms.cylinderRadius, 0.05f, 0.25f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        ImGui::Checkbox("Sphere endcaps", &uniforms.endCaps);
         ImGui::Unindent();
         if (!drawCylinders) ImGui::EndDisabled();
 

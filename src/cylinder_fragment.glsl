@@ -19,6 +19,7 @@ uniform float lightIntensity;
 uniform int drawNormals;
 uniform float cylinderRadius;
 uniform int distortionCorrection;
+uniform int endCaps;
 
 void main() {
     vec3 d = normalize(fPos);
@@ -36,14 +37,35 @@ void main() {
     float t = min(t0, t1);
     vec3 pos = t * d;
 
+    vec3 normal;
     vec3 ab = b - a;
     vec3 ap = pos - a;
     float ct = dot(ab, ap) / dot(ab, ab);
     if (ct < 0.0 || ct > 1.0) {
-        discard;
+        if (endCaps != 0) {
+            // Raytrace a sphere endcap
+            vec3 s;
+            if (ct < 0.0) s = a;
+            else s = b;
+            float A = 1.0;
+            float B = -2.0 * dot(d, s);
+            float C = dot(s, s) - cylinderRadius * cylinderRadius;
+            float discriminant = B * B - 4.0 * A * C;
+            if (discriminant < 0.0) {
+                discard;
+            }
+            float t0 = (-B + sqrt(discriminant)) / (2.0 * A);
+            float t1 = (-B - sqrt(discriminant)) / (2.0 * A);
+            float t = min(t0, t1);
+            pos = t * d;
+            normal = normalize(pos - s);
+        }
+        else discard;
     }
-    vec3 p = a + ct * ab;
-    vec3 normal = normalize(pos - p);
+    else {
+        vec3 p = a + ct * ab;
+        normal = normalize(pos - p);
+    }
 
     vec3 vp = vec3(0.0);
     vec3 lp = vec3(view * vec4(lightPos, 1.0));
