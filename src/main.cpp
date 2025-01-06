@@ -151,7 +151,6 @@ struct Uniforms {
     float sphereRadius;
     float cylinderRadius;
     bool raytraced;
-    float sphereQuadSizeFactor;
 };
 
 void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
@@ -191,8 +190,6 @@ void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
     glUniform1f(uniformLoc, uniforms.cylinderRadius);
     uniformLoc = glGetUniformLocation(shaderProgram, "raytraced");
     glUniform1i(uniformLoc, uniforms.raytraced);
-    uniformLoc = glGetUniformLocation(shaderProgram, "sphereQuadSizeFactor");
-    glUniform1f(uniformLoc, uniforms.sphereQuadSizeFactor);
 
     // Bind buffers
     glBindVertexArray(object.vao);
@@ -424,7 +421,6 @@ int main() {
     uniforms.sphereRadius = 0.25f;
     uniforms.cylinderRadius = 0.1f;
     uniforms.raytraced = true;
-    uniforms.sphereQuadSizeFactor = 1.0f;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -464,10 +460,6 @@ int main() {
         ImGui::SetNextItemWidth(128);
         ImGui::SliderFloat("Sphere radius", &uniforms.sphereRadius, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
         ImGui::Checkbox("Ray traced", &uniforms.raytraced);
-        if (!uniforms.raytraced) ImGui::BeginDisabled();
-        ImGui::SetNextItemWidth(128);
-        ImGui::SliderFloat("Quad size factor", &uniforms.sphereQuadSizeFactor, 1.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
-        if (!uniforms.raytraced) ImGui::EndDisabled();
         ImGui::Unindent();
         if (!drawSpheres) ImGui::EndDisabled();
 

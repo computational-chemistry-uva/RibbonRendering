@@ -5,8 +5,9 @@ layout (triangle_strip, max_vertices = 4) out;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
+uniform vec3 viewPos;
 uniform float sphereRadius;
-uniform float sphereQuadSizeFactor;
+uniform int raytraced;
 /* uniform float time; */
 
 /* in vec3 vPos[]; */
@@ -20,11 +21,10 @@ out vec3 bCoord; // Barycentric coordinates, for wireframe shader
 out vec3 fOrigin;
 
 void main() {
-    vec3 viewRight = vec3(view[0][0], view[1][0], view[2][0]);
-    vec3 viewUp = vec3(view[0][1], view[1][1], view[2][1]);
-
-    vec3 worldPos = vec3(model * gl_in[0].gl_Position);
-    vec3 worldNormal = normalize(cross(viewRight, viewUp));
+    vec3 originPos = vec3(model * gl_in[0].gl_Position);
+    vec3 worldNormal = normalize(viewPos - originPos);
+    vec3 right = normalize(cross(worldNormal, vec3(0.0, 1.0, 0.0)));
+    vec3 up = cross(worldNormal, right);
 
     vec2 offsets[4] = vec2[](
         vec2(-1.0, -1.0),
@@ -42,14 +42,15 @@ void main() {
 
     for (int i = 0; i < 4; i++) {
         vec2 coords = offsets[i];
-        vec3 pos = worldPos + coords.x * sphereRadius * sphereQuadSizeFactor * viewRight + coords.y * sphereRadius * sphereQuadSizeFactor * viewUp;
+        vec3 pos = originPos + coords.x * sphereRadius * right + coords.y * sphereRadius * up;
+        if (raytraced != 0) pos += sphereRadius * worldNormal; // Avoid clipping due to perspective distortion
         gl_Position = projection * view * vec4(pos, 1.0);
         fPos = pos;
         fNorm = worldNormal;
         fCol = vec3(1.0, 0.5, 0.5);
-        fCoord = coords * sphereQuadSizeFactor;
+        fCoord = coords;
         bCoord = barycentric[i];
-        fOrigin = worldPos;
+        fOrigin = originPos;
 
         fPos = vec3(view * vec4(fPos, 1.0));
         fNorm = normalize(transpose(inverse(mat3(view))) * fNorm);
