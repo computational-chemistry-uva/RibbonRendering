@@ -152,17 +152,18 @@ struct Uniforms {
     float cylinderRadius;
     bool raytraced;
     float sphereQuadSizeFactor;
-    float cylinderExtraQuadLengthFactor;
 };
 
 void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
     // Set shader
     GLuint shaderProgram;
     if (wireframe) {
+        glDisable(GL_CULL_FACE);
         glDepthRange(0.0, 0.01);
         shaderProgram = object.wireframeShader;
     }
     else {
+        glEnable(GL_CULL_FACE);
         glDepthRange(0.0, 1.0);
         shaderProgram = object.shader;
     }
@@ -192,8 +193,6 @@ void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
     glUniform1i(uniformLoc, uniforms.raytraced);
     uniformLoc = glGetUniformLocation(shaderProgram, "sphereQuadSizeFactor");
     glUniform1f(uniformLoc, uniforms.sphereQuadSizeFactor);
-    uniformLoc = glGetUniformLocation(shaderProgram, "cylinderExtraQuadLengthFactor");
-    glUniform1f(uniformLoc, uniforms.cylinderExtraQuadLengthFactor);
 
     // Bind buffers
     glBindVertexArray(object.vao);
@@ -236,6 +235,8 @@ int main() {
     // Depth testing
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
+    // Backface culling
+    glEnable(GL_CULL_FACE);
     // Alpha blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -414,9 +415,9 @@ int main() {
     float pitch = 30.0f;
     float dist = 5.0f;
     float fov = 45.0f;
-    bool drawWireframes = false;
+    bool drawWireframes = true;
     bool drawMesh = false;
-    bool drawSpheres = true;
+    bool drawSpheres = false;
     bool drawCylinders = true;
     uniforms.drawNormals = false;
     uniforms.lightIntensity = 1.0f;
@@ -424,7 +425,6 @@ int main() {
     uniforms.cylinderRadius = 0.1f;
     uniforms.raytraced = true;
     uniforms.sphereQuadSizeFactor = 1.0f;
-    uniforms.cylinderExtraQuadLengthFactor = 0.0f;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -477,8 +477,6 @@ int main() {
         ImGui::Indent();
         ImGui::SetNextItemWidth(128);
         ImGui::SliderFloat("Cylinder radius", &uniforms.cylinderRadius, 0.05f, 0.25f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
-        ImGui::SetNextItemWidth(128);
-        ImGui::SliderFloat("Extra quad length factor", &uniforms.cylinderExtraQuadLengthFactor, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
         ImGui::Unindent();
         if (!drawCylinders) ImGui::EndDisabled();
 

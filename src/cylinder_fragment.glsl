@@ -2,10 +2,10 @@
 out vec4 FragColor;
 
 in vec3 fPos;
-in vec3 fNorm;
+//in vec3 fNorm;
 in vec3 fCol;
-in vec2 fCoord;
-in vec3 fOrigin;
+//in vec2 fCoord;
+//in vec3 fOrigin;
 in vec3 a;
 in vec3 b;
 
