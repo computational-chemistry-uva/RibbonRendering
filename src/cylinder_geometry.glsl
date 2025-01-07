@@ -20,6 +20,7 @@ out vec3 bCoord; // Barycentric coordinates, for wireframe shader
 out vec3 fOrigin;
 out vec3 a;
 out vec3 b;
+out vec3 startDir;
 
 void main() {
     vec3 aPos = vec3(model * gl_in[0].gl_Position);
@@ -74,6 +75,7 @@ void main() {
         fPos = vec3(view * vec4(fPos, 1.0));
         //fNorm = normalize(transpose(inverse(mat3(view))) * fNorm);
         //fOrigin = vec3(view * vec4(fOrigin, 1.0));
+        startDir = normalize(transpose(inverse(mat3(view))) * worldNormal);
 
         EmitVertex();
     }

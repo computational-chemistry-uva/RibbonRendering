@@ -8,6 +8,7 @@ in vec3 fCol;
 //in vec3 fOrigin;
 in vec3 a;
 in vec3 b;
+in vec3 startDir;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -19,7 +20,11 @@ uniform float lightIntensity;
 uniform int drawNormals;
 uniform float cylinderRadius;
 uniform int distortionCorrection;
-uniform int endCaps;
+uniform int cylinderMode;
+uniform float pitch;
+uniform float width;
+
+#define PI 3.1415926538
 
 void main() {
     vec3 d = normalize(fPos);
@@ -37,40 +42,71 @@ void main() {
     float t = min(t0, t1);
     vec3 pos = t * d;
 
-    vec3 normal;
     vec3 ab = b - a;
     vec3 ap = pos - a;
     float ct = dot(ab, ap) / dot(ab, ab);
-    if (ct < 0.0 || ct > 1.0) {
-        if (endCaps != 0) {
-            // Raytrace a sphere endcap
-            vec3 s;
-            if (ct < 0.0) s = a;
-            else s = b;
-            float A = 1.0;
-            float B = -2.0 * dot(d, s);
-            float C = dot(s, s) - cylinderRadius * cylinderRadius;
-            float discriminant = B * B - 4.0 * A * C;
-            if (discriminant < 0.0) {
+    vec3 p = a + ct * ab;
+    vec3 normal = normalize(pos - p);
+
+    if (cylinderMode == 2) {
+        float nTurns = length(ab) / pitch;
+        float angle = nTurns * ct * 2.0 * PI;
+        vec3 helixX = normalize(startDir);
+        vec3 helixY = normalize(cross(ab, helixX));
+        vec3 helixDir = helixX * cos(angle) + helixY * sin(angle);
+
+        if (ct < 0.0 || ct > 1.0 || 1.0 - dot(normal, helixDir) > 2.0 * width) {
+            pos = max(t0, t1) * d;
+
+            ap = pos - a;
+            ct = dot(ab, ap) / dot(ab, ab);
+
+            if (ct < 0.0 || ct > 1.0) discard;
+
+            p = a + ct * ab;
+            normal = normalize(pos - p);
+
+            float angle = nTurns * ct * 2.0 * PI;
+            vec3 helixX = normalize(startDir);
+            vec3 helixY = normalize(cross(ab, helixX));
+            vec3 helixDir = helixX * cos(angle) + helixY * sin(angle);
+
+            if (1.0 - dot(normal, helixDir) > 2.0 * width) {
                 discard;
             }
-            float t0 = (-B + sqrt(discriminant)) / (2.0 * A);
-            float t1 = (-B - sqrt(discriminant)) / (2.0 * A);
-            float t = min(t0, t1);
-            pos = t * d;
-            normal = normalize(pos - s);
+
+            normal = -normal;
         }
-        else discard;
     }
     else {
-        vec3 p = a + ct * ab;
-        normal = normalize(pos - p);
+        if (ct < 0.0 || ct > 1.0) {
+            if (cylinderMode == 1) {
+                // Raytrace a sphere endcap
+                vec3 s;
+                if (ct < 0.0) s = a;
+                else s = b;
+                float A = 1.0;
+                float B = -2.0 * dot(d, s);
+                float C = dot(s, s) - cylinderRadius * cylinderRadius;
+                float discriminant = B * B - 4.0 * A * C;
+                if (discriminant < 0.0) {
+                    discard;
+                }
+                float t0 = (-B + sqrt(discriminant)) / (2.0 * A);
+                float t1 = (-B - sqrt(discriminant)) / (2.0 * A);
+                float t = min(t0, t1);
+                pos = t * d;
+                normal = normalize(pos - s);
+            }
+            else discard;
+        }
     }
 
     vec3 vp = vec3(0.0);
     vec3 lp = vec3(view * vec4(lightPos, 1.0));
 
     vec3 albedo = fCol;
+    //vec3 albedo = fCol * (0.5 + 0.5 * step(0.5, mod(ct * 4.0, 1.0)));
     float diffuse = 1.0;
     float specular = 0.0;
     if (drawNormals != 0) {

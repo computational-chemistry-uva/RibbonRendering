@@ -151,7 +151,9 @@ struct Uniforms {
     float sphereRadius;
     bool raytraced;
     float cylinderRadius;
-    bool endCaps;
+    int cylinderMode;
+    float pitch;
+    float width;
 };
 
 void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
@@ -191,8 +193,12 @@ void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
     glUniform1i(uniformLoc, uniforms.raytraced);
     uniformLoc = glGetUniformLocation(shaderProgram, "cylinderRadius");
     glUniform1f(uniformLoc, uniforms.cylinderRadius);
-    uniformLoc = glGetUniformLocation(shaderProgram, "endCaps");
-    glUniform1i(uniformLoc, uniforms.endCaps);
+    uniformLoc = glGetUniformLocation(shaderProgram, "cylinderMode");
+    glUniform1i(uniformLoc, uniforms.cylinderMode);
+    uniformLoc = glGetUniformLocation(shaderProgram, "width");
+    glUniform1f(uniformLoc, uniforms.width);
+    uniformLoc = glGetUniformLocation(shaderProgram, "pitch");
+    glUniform1f(uniformLoc, uniforms.pitch);
 
     // Bind buffers
     glBindVertexArray(object.vao);
@@ -424,7 +430,9 @@ int main() {
     uniforms.sphereRadius = 0.25f;
     uniforms.raytraced = true;
     uniforms.cylinderRadius = 0.1f;
-    uniforms.endCaps = true;
+    uniforms.cylinderMode = 2;
+    uniforms.pitch = 0.5f;
+    uniforms.width = 0.25f;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -453,7 +461,7 @@ int main() {
         ImGui::Checkbox("Draw normals", &uniforms.drawNormals);
         ImGui::SetNextItemWidth(128);
         if (uniforms.drawNormals) ImGui::BeginDisabled();
-        ImGui::SliderFloat("Light Intensity", &uniforms.lightIntensity, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        ImGui::SliderFloat("Light", &uniforms.lightIntensity, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
         if (uniforms.drawNormals) ImGui::EndDisabled();
         ImGui::Unindent();
 
@@ -462,7 +470,7 @@ int main() {
         ImGui::Text("Sphere impostors");
         ImGui::Indent();
         ImGui::SetNextItemWidth(128);
-        ImGui::SliderFloat("Sphere radius", &uniforms.sphereRadius, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        ImGui::SliderFloat("Radius##Sphere", &uniforms.sphereRadius, 0.1f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
         ImGui::Checkbox("Ray traced", &uniforms.raytraced);
         ImGui::Unindent();
         if (!drawSpheres) ImGui::EndDisabled();
@@ -472,8 +480,15 @@ int main() {
         ImGui::Text("Cylinder impostors");
         ImGui::Indent();
         ImGui::SetNextItemWidth(128);
-        ImGui::SliderFloat("Cylinder radius", &uniforms.cylinderRadius, 0.05f, 0.25f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
-        ImGui::Checkbox("Sphere endcaps", &uniforms.endCaps);
+        ImGui::SliderFloat("Radius##Cylinder", &uniforms.cylinderRadius, 0.05f, 0.25f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        ImGui::SetNextItemWidth(128);
+        ImGui::Combo("Mode", &uniforms.cylinderMode, "Simple\0Capped\0Ribbon\0");
+        if (uniforms.cylinderMode != 2) ImGui::BeginDisabled();
+        ImGui::SetNextItemWidth(128);
+        ImGui::SliderFloat("Pitch", &uniforms.pitch, 0.05f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        ImGui::SetNextItemWidth(128);
+        ImGui::SliderFloat("Width", &uniforms.width, 0.05f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
+        if (uniforms.cylinderMode != 2) ImGui::EndDisabled();
         ImGui::Unindent();
         if (!drawCylinders) ImGui::EndDisabled();
 
