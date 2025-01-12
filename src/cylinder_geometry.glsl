@@ -7,6 +7,7 @@ uniform mat4 view;
 uniform mat4 projection;
 uniform vec3 viewPos;
 uniform float cylinderRadius;
+uniform int cylinderMode;
 /* uniform float time; */
 
 /* in vec3 vPos[]; */
@@ -58,7 +59,8 @@ void main() {
     // NOTE Only doing this in separate primitives for the wireframe shader. Could all be one loop
     for (int i = 0; i < 4; i++) {
         vec3 coords = offsets[i];
-        vec3 pos = centerPos + u * coords.x + coords.y * normalize(v) * (length(v) + cylinderRadius) + worldNormal * coords.z * cylinderRadius;
+        vec3 pos = centerPos + u * coords.x + coords.y * v + worldNormal * coords.z * cylinderRadius;
+        if (cylinderMode == 1) pos += coords.y * normalize(v) * cylinderRadius;
         gl_Position = projection * view * vec4(pos, 1.0);
         fPos = pos;
         //if (i < 2) fNorm = -normalize(v);
@@ -79,7 +81,8 @@ void main() {
     EndPrimitive();
     for (int i = 2; i < 6; i++) {
         vec3 coords = offsets[i];
-        vec3 pos = centerPos + u * coords.x + coords.y * normalize(v) * (length(v) + cylinderRadius) + worldNormal * coords.z * cylinderRadius;
+        vec3 pos = centerPos + u * coords.x + coords.y * v + worldNormal * coords.z * cylinderRadius;
+        if (cylinderMode == 1) pos += coords.y * normalize(v) * cylinderRadius;
         gl_Position = projection * view * vec4(pos, 1.0);
         fPos = pos;
         //if (i < 2) fNorm = -normalize(v);
@@ -100,7 +103,8 @@ void main() {
     EndPrimitive();
     for (int i = 4; i < 8; i++) {
         vec3 coords = offsets[i];
-        vec3 pos = centerPos + u * coords.x + coords.y * normalize(v) * (length(v) + cylinderRadius) + worldNormal * coords.z * cylinderRadius;
+        vec3 pos = centerPos + u * coords.x + coords.y * v + worldNormal * coords.z * cylinderRadius;
+        if (cylinderMode == 1) pos += coords.y * normalize(v) * cylinderRadius;
         gl_Position = projection * view * vec4(pos, 1.0);
         fPos = pos;
         //if (i < 2) fNorm = -normalize(v);
