@@ -1,5 +1,6 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
+#include <algorithm>
 #include <iostream>
 #include <cmath>
 #include "imgui.h"
@@ -10,6 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
+#include <vector>
 
 static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
@@ -269,64 +271,46 @@ int main() {
     // Setup projection matrix
     windowResizeCallback(window, 1280, 720);
 
-    // Cube vertex data: positions (x, y, z) and normals (nx, ny, nz)
-    float vertices[] = {
-        -0.5f, -0.5f, -0.5f,
-        -0.5f, -0.5f,  0.5f,
-        -0.5f,  0.5f, -0.5f,
-        -0.5f,  0.5f,  0.5f,
-         0.5f, -0.5f, -0.5f,
-         0.5f, -0.5f,  0.5f,
-         0.5f,  0.5f, -0.5f,
-         0.5f,  0.5f,  0.5f,
+    //float vertices[] = {
+    //    0.0f, 0.0f,  0.5f, 0.0f, 0.0f, -1.0f,
+    //    0.0f, 0.0f, -0.5f, 0.0f, 0.316228f, -0.948683f,
+    //    0.0f, 0.5f, -1.0f, 0.0f, 0.707107f, -0.707107f,
+    //};
+
+    glm::vec3 points[] = {
+        glm::vec3(0.0f, 0.0f, 0.5f),
+        glm::vec3(0.0f, 0.0f, -0.5f),
+        glm::vec3(0.0f, 0.5f, -1.0f),
     };
 
-    // Indices for rendering the cube using triangle primitives
+    std::vector<float>vertices;
+    for (int i = 0; i < 3; i++) {
+        vertices.push_back(points[i].x);
+        vertices.push_back(points[i].y);
+        vertices.push_back(points[i].z);
+        int a = std::max(i - 1, 0);
+        int b = std::min(i + 1, 2);
+        glm::vec3 v = glm::normalize(points[b] - points[a]);
+        vertices.push_back(v.x);
+        vertices.push_back(v.y);
+        vertices.push_back(v.z);
+    }
+
     unsigned int triangleIndices[] = {
-        0, 1, 3,
-        3, 2, 0,
-        4, 6, 7,
-        7, 5, 4,
-        0, 4, 5,
-        5, 1, 0,
-        2, 3, 7,
-        7, 6, 2,
-        0, 2, 6,
-        6, 4, 0,
-        1, 5, 7,
-        7, 3, 1,
+        0, 1, 2,
     };
-    unsigned int nTriangleIndices = 36;
-
-    // Indices for rendering the cube using point primitives
+    unsigned int nTriangleIndices = 3;
     unsigned int pointIndices[] = {
         0,
         1,
         2,
-        3,
-        4,
-        5,
-        6,
-        7,
     };
-    unsigned int nPointIndices = 8;
-
-    // Indices for rendering the cube using line primitives
+    unsigned int nPointIndices = 3;
     unsigned int lineIndices[] = {
         0, 1,
-        2, 3,
-        4, 5,
-        6, 7,
-        0, 2,
-        1, 3,
-        4, 6,
-        5, 7,
-        0, 4,
-        1, 5,
-        2, 6,
-        3, 7,
+        1, 2,
     };
-    unsigned int nLineIndices = 24;
+    unsigned int nLineIndices = 4;
 
     // Create buffers
     GLuint vao, vbo, triangleIbo, pointIbo, lineIbo;
@@ -339,10 +323,12 @@ int main() {
     glBindVertexArray(vao);
     // Bind and fill VBO
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
     // Bind and fill IBOs
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangleIbo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(triangleIndices), triangleIndices, GL_STATIC_DRAW);
@@ -530,7 +516,13 @@ int main() {
         // Draw objects
         if (drawMesh) draw(mesh, uniforms, false);
         if (drawSpheres) draw(spheres, uniforms, false);
-        if (drawCylinders) draw(cylinders, uniforms, false);
+        if (drawCylinders) {
+            //float r = uniforms.cylinderRadius;
+            //uniforms.cylinderRadius -= 0.02;
+            //draw(cylinders, uniforms, false);
+            //uniforms.cylinderRadius = r;
+            draw(cylinders, uniforms, false);
+        }
         if (drawWireframes) {
             if (drawMesh) draw(mesh, uniforms, true);
             if (drawSpheres) draw(spheres, uniforms, true);

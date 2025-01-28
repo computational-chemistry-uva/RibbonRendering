@@ -9,6 +9,8 @@ in vec3 fCol;
 in vec3 a;
 in vec3 b;
 in vec3 startDir;
+in vec3 faCPN;
+in vec3 fbCPN;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -55,7 +57,7 @@ void main() {
         vec3 helixY = normalize(cross(ab, helixX));
         vec3 helixDir = helixX * cos(angle) + helixY * sin(angle);
 
-        if (ct < 0.0 || ct > 1.0 || 1.0 - dot(normal, helixDir) > 2.0 * width) {
+        if (dot(pos - a, faCPN) < 0.0 || dot(b - pos, fbCPN) < 0.0 || 1.0 - dot(normal, helixDir) > 2.0 * width) {
             pos = max(t0, t1) * d;
 
             ap = pos - a;
@@ -78,27 +80,29 @@ void main() {
             normal = -normal;
         }
     }
-    else {
+    else if (cylinderMode == 1) {
         if (ct < 0.0 || ct > 1.0) {
-            if (cylinderMode == 1) {
-                // Raytrace a sphere endcap
-                vec3 s;
-                if (ct < 0.0) s = a;
-                else s = b;
-                float A = 1.0;
-                float B = -2.0 * dot(d, s);
-                float C = dot(s, s) - cylinderRadius * cylinderRadius;
-                float discriminant = B * B - 4.0 * A * C;
-                if (discriminant < 0.0) {
-                    discard;
-                }
-                float t0 = (-B + sqrt(discriminant)) / (2.0 * A);
-                float t1 = (-B - sqrt(discriminant)) / (2.0 * A);
-                float t = min(t0, t1);
-                pos = t * d;
-                normal = normalize(pos - s);
+            // Raytrace a sphere endcap
+            vec3 s;
+            if (ct < 0.0) s = a;
+            else s = b;
+            float A = 1.0;
+            float B = -2.0 * dot(d, s);
+            float C = dot(s, s) - cylinderRadius * cylinderRadius;
+            float discriminant = B * B - 4.0 * A * C;
+            if (discriminant < 0.0) {
+                discard;
             }
-            else discard;
+            float t0 = (-B + sqrt(discriminant)) / (2.0 * A);
+            float t1 = (-B - sqrt(discriminant)) / (2.0 * A);
+            float t = min(t0, t1);
+            pos = t * d;
+            normal = normalize(pos - s);
+        }
+    }
+    else {
+        if (dot(pos - a, faCPN) < 0.0 || dot(b - pos, fbCPN) < 0.0) {
+            discard;
         }
     }
 
