@@ -63,7 +63,7 @@ void main() {
             ap = pos - a;
             ct = dot(ab, ap) / dot(ab, ab);
 
-            if (ct < 0.0 || ct > 1.0) discard;
+            if (dot(pos - a, faCPN) < 0.0 || dot(b - pos, fbCPN) < 0.0) discard;
 
             p = a + ct * ab;
             normal = normalize(pos - p);

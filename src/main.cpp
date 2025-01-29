@@ -211,10 +211,19 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
     for (int i = 0; i < points.size() - 1; i++) {
         glm::vec3 a = points[i];
         glm::vec3 b = points[i + 1];
-        glm::vec3 a1 = points[std::max(i - 1, 0)];
-        glm::vec3 b1 = points[std::min(i + 2, int(points.size() - 1))];
-        glm::vec3 aCPN = glm::normalize(b - a1);
-        glm::vec3 bCPN = glm::normalize(b1 - a);
+        glm::vec3 aCPN, bCPN;
+        if (i < 1) {
+            aCPN = glm::normalize(b - a);
+        }
+        else {
+            aCPN = glm::normalize(glm::normalize(b - a) - glm::normalize(points[i - 1] - a));
+        }
+        if (i > points.size() - 3) {
+            bCPN = glm::normalize(b - a);
+        }
+        else {
+            bCPN = glm::normalize(glm::normalize(points[i + 2] - b) - glm::normalize(a - b));
+        }
         // TODO For helices, only draw one cap quad
         for (int j = 0; j < 18; j++) {
             vertices.push_back(a.x);
