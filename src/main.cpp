@@ -98,22 +98,24 @@ GLuint compileShader(GLenum type, const std::string& source) {
     return shader;
 }
 
+struct DrawObject {
+    GLuint vbo;
+    GLuint vao;
+    unsigned int nVertices;
+};
+
 GLuint createShaderProgram(
     const char* vertexPath,
-    const char* geometryPath,
     const char* fragmentPath
 ) {
     std::string vertexSource = readShaderFile(vertexPath);
-    std::string geometrySource = readShaderFile(geometryPath);
     std::string fragmentSource = readShaderFile(fragmentPath);
 
     GLuint vertexShader = compileShader(GL_VERTEX_SHADER, vertexSource);
-    GLuint geometryShader = compileShader(GL_GEOMETRY_SHADER, geometrySource);
     GLuint fragmentShader = compileShader(GL_FRAGMENT_SHADER, fragmentSource);
 
     GLuint shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
-    glAttachShader(shaderProgram, geometryShader);
     glAttachShader(shaderProgram, fragmentShader);
     glLinkProgram(shaderProgram);
 
@@ -126,20 +128,137 @@ GLuint createShaderProgram(
     }
 
     glDeleteShader(vertexShader);
-    glDeleteShader(geometryShader);
     glDeleteShader(fragmentShader);
 
     return shaderProgram;
 }
 
-struct DrawObject {
-    GLuint vao;
-    GLuint vbo;
-    GLuint ibo;
-    unsigned nIndices;
-    GLuint shader;
-    GLuint wireframeShader;
-    unsigned drawMode;
+// TODO Add note about index-based rendering with vertex shaders
+
+DrawObject createMesh(std::vector<glm::vec3> &points) {
+    // Create vertex data
+    std::vector<float> vertices;
+    for (int i = 0; i < points.size(); i++) {
+        vertices.push_back(points[i].x);
+        vertices.push_back(points[i].y);
+        vertices.push_back(points[i].z);
+        // TODO Normals
+        int a = std::max(i - 1, 0);
+        int b = std::min(i + 1, 2);
+        glm::vec3 v = glm::normalize(points[b] - points[a]);
+        vertices.push_back(v.x);
+        vertices.push_back(v.y);
+        vertices.push_back(v.z);
+    }
+
+    // Create buffers
+    GLuint vao, vbo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    // Bind VAO first
+    glBindVertexArray(vao);
+    // Bind and fill VBO
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    // Position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    // Normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+
+    return DrawObject {
+        vbo,
+        vao,
+        unsigned(vertices.size() / 6)
+    };
+};
+
+DrawObject createSpheres(std::vector<glm::vec3> &points) {
+    // Create vertex data
+    std::vector<float> vertices;
+    for (int i = 0; i < points.size(); i++) {
+        for (int j = 0; j < 6; j++) {
+            vertices.push_back(points[i].x);
+            vertices.push_back(points[i].y);
+            vertices.push_back(points[i].z);
+        }
+    }
+
+    // Create buffers
+    GLuint vao, vbo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    // Bind VAO first
+    glBindVertexArray(vao);
+    // Bind and fill VBO
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    // Position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    return DrawObject {
+        vbo,
+        vao,
+        unsigned(vertices.size() / 3)
+    };
+};
+
+DrawObject createCylinders(std::vector<glm::vec3> &points) {
+    // Create vertex data
+    std::vector<float> vertices;
+    for (int i = 0; i < points.size() - 1; i++) {
+        glm::vec3 a = points[i];
+        glm::vec3 b = points[i + 1];
+        glm::vec3 a1 = points[std::max(i - 1, 0)];
+        glm::vec3 b1 = points[std::min(i + 2, int(points.size() - 1))];
+        glm::vec3 aCPN = glm::normalize(b - a1);
+        glm::vec3 bCPN = glm::normalize(b1 - a);
+        // TODO For helices, only draw one cap quad
+        for (int j = 0; j < 18; j++) {
+            vertices.push_back(a.x);
+            vertices.push_back(a.y);
+            vertices.push_back(a.z);
+            vertices.push_back(b.x);
+            vertices.push_back(b.y);
+            vertices.push_back(b.z);
+            vertices.push_back(aCPN.x);
+            vertices.push_back(aCPN.y);
+            vertices.push_back(aCPN.z);
+            vertices.push_back(bCPN.x);
+            vertices.push_back(bCPN.y);
+            vertices.push_back(bCPN.z);
+        }
+    }
+
+    // Create buffers
+    GLuint vao, vbo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    // Bind VAO first
+    glBindVertexArray(vao);
+    // Bind and fill VBO
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    // A position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+    // B position plane normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (void*)(3 * sizeof(float)));
+    glEnableVertexAttribArray(1);
+    // A cut plane normal attribute
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
+    // B cut plane normal attribute
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (void*)(9 * sizeof(float)));
+    glEnableVertexAttribArray(3);
+
+    return DrawObject {
+        vbo,
+        vao,
+        unsigned(vertices.size() / 12)
+    };
 };
 
 struct Uniforms {
@@ -158,19 +277,8 @@ struct Uniforms {
     float width;
 };
 
-void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
-    // Set shader
-    GLuint shaderProgram;
-    if (wireframe) {
-        glDisable(GL_CULL_FACE);
-        glDepthRange(0.0, 0.01);
-        shaderProgram = object.wireframeShader;
-    }
-    else {
-        glEnable(GL_CULL_FACE);
-        glDepthRange(0.0, 1.0);
-        shaderProgram = object.shader;
-    }
+void draw(DrawObject &object, Uniforms &uniforms, GLuint shaderProgram) {
+    // Use shader
     glUseProgram(shaderProgram);
 
     // Set uniforms
@@ -202,13 +310,11 @@ void draw(DrawObject &object, Uniforms &uniforms, bool wireframe) {
     uniformLoc = glGetUniformLocation(shaderProgram, "pitch");
     glUniform1f(uniformLoc, uniforms.pitch);
 
-    // Bind buffers
+    // Bind VAO
     glBindVertexArray(object.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object.ibo);
 
     // Draw
-    glDrawElements(object.drawMode, object.nIndices, GL_UNSIGNED_INT, 0);
+    glDrawArrays(GL_TRIANGLES, 0, object.nVertices);
 }
 
 int main() {
@@ -271,135 +377,45 @@ int main() {
     // Setup projection matrix
     windowResizeCallback(window, 1280, 720);
 
-    //float vertices[] = {
-    //    0.0f, 0.0f,  0.5f, 0.0f, 0.0f, -1.0f,
-    //    0.0f, 0.0f, -0.5f, 0.0f, 0.316228f, -0.948683f,
-    //    0.0f, 0.5f, -1.0f, 0.0f, 0.707107f, -0.707107f,
-    //};
-
-    glm::vec3 points[] = {
+    std::vector<glm::vec3> points = {
         glm::vec3(0.0f, 0.0f, 0.5f),
         glm::vec3(0.0f, 0.0f, -0.5f),
         glm::vec3(0.0f, 0.5f, -1.0f),
     };
 
-    std::vector<float>vertices;
-    for (int i = 0; i < 3; i++) {
-        vertices.push_back(points[i].x);
-        vertices.push_back(points[i].y);
-        vertices.push_back(points[i].z);
-        int a = std::max(i - 1, 0);
-        int b = std::min(i + 1, 2);
-        glm::vec3 v = glm::normalize(points[b] - points[a]);
-        vertices.push_back(v.x);
-        vertices.push_back(v.y);
-        vertices.push_back(v.z);
-    }
-
-    unsigned int triangleIndices[] = {
-        0, 1, 2,
-    };
-    unsigned int nTriangleIndices = 3;
-    unsigned int pointIndices[] = {
-        0,
-        1,
-        2,
-    };
-    unsigned int nPointIndices = 3;
-    unsigned int lineIndices[] = {
-        0, 1,
-        1, 2,
-    };
-    unsigned int nLineIndices = 4;
-
-    // Create buffers
-    GLuint vao, vbo, triangleIbo, pointIbo, lineIbo;
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    glGenBuffers(1, &triangleIbo);
-    glGenBuffers(1, &pointIbo);
-    glGenBuffers(1, &lineIbo);
-    // Bind VAO first
-    glBindVertexArray(vao);
-    // Bind and fill VBO
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
-    // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    // Bind and fill IBOs
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, triangleIbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(triangleIndices), triangleIndices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, pointIbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(pointIndices), pointIndices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, lineIbo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(lineIndices), lineIndices, GL_STATIC_DRAW);
+    DrawObject mesh = createMesh(points);
+    DrawObject spheres = createSpheres(points);
+    DrawObject cylinders = createCylinders(points);
 
     GLuint meshWireframeProgram = createShaderProgram(
         "../src/mesh_vertex.glsl",
-        "../src/mesh_geometry.glsl",
         "../src/wireframe_fragment.glsl"
     );
 
     GLuint meshProgram = createShaderProgram(
         "../src/mesh_vertex.glsl",
-        "../src/mesh_geometry.glsl",
         "../src/mesh_fragment.glsl"
     );
 
     GLuint sphereWireframeProgram = createShaderProgram(
-        "../src/passthrough_vertex.glsl",
-        "../src/sphere_geometry.glsl",
+        "../src/sphere_vertex.glsl",
         "../src/wireframe_fragment.glsl"
     );
 
     GLuint sphereProgram = createShaderProgram(
-        "../src/passthrough_vertex.glsl",
-        "../src/sphere_geometry.glsl",
+        "../src/sphere_vertex.glsl",
         "../src/sphere_fragment.glsl"
     );
 
     GLuint cylinderWireframeProgram = createShaderProgram(
-        "../src/passthrough_vertex.glsl",
-        "../src/cylinder_geometry.glsl",
+        "../src/cylinder_vertex.glsl",
         "../src/wireframe_fragment.glsl"
     );
 
     GLuint cylinderProgram = createShaderProgram(
-        "../src/passthrough_vertex.glsl",
-        "../src/cylinder_geometry.glsl",
+        "../src/cylinder_vertex.glsl",
         "../src/cylinder_fragment.glsl"
     );
-
-    DrawObject mesh = {
-        vao,
-        vbo,
-        triangleIbo,
-        nTriangleIndices,
-        meshProgram,
-        meshWireframeProgram,
-        GL_TRIANGLES,
-    };
-    DrawObject spheres = {
-        vao,
-        vbo,
-        pointIbo,
-        nPointIndices,
-        sphereProgram,
-        sphereWireframeProgram,
-        GL_POINTS,
-    };
-    DrawObject cylinders = {
-        vao,
-        vbo,
-        lineIbo,
-        nLineIndices,
-        cylinderProgram,
-        cylinderWireframeProgram,
-        GL_LINES,
-    };
 
     Uniforms uniforms;
 
@@ -407,7 +423,7 @@ int main() {
     float pitch = 30.0f;
     float dist = 5.0f;
     float fov = 45.0f;
-    bool drawWireframes = false;
+    bool drawWireframes = true;
     bool drawMesh = false;
     bool drawSpheres = false;
     bool drawCylinders = true;
@@ -468,7 +484,7 @@ int main() {
         ImGui::SetNextItemWidth(128);
         ImGui::SliderFloat("Radius##Cylinder", &uniforms.cylinderRadius, 0.05f, 0.25f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
         ImGui::SetNextItemWidth(128);
-        ImGui::Combo("Mode", &uniforms.cylinderMode, "Simple\0Capped\0Ribbon\0");
+        ImGui::Combo("Mode", &uniforms.cylinderMode, "Simple\0Rounded\0Ribbon\0");
         if (uniforms.cylinderMode != 2) ImGui::BeginDisabled();
         ImGui::SetNextItemWidth(128);
         ImGui::SliderFloat("Pitch", &uniforms.pitch, 0.05f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
@@ -514,19 +530,17 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Draw objects
-        if (drawMesh) draw(mesh, uniforms, false);
-        if (drawSpheres) draw(spheres, uniforms, false);
-        if (drawCylinders) {
-            //float r = uniforms.cylinderRadius;
-            //uniforms.cylinderRadius -= 0.02;
-            //draw(cylinders, uniforms, false);
-            //uniforms.cylinderRadius = r;
-            draw(cylinders, uniforms, false);
-        }
+        glEnable(GL_CULL_FACE);
+        glDepthRange(0.0, 1.0);
+        if (drawMesh) draw(mesh, uniforms, meshProgram);
+        if (drawSpheres) draw(spheres, uniforms, sphereProgram);
+        if (drawCylinders) draw(cylinders, uniforms, cylinderProgram);
         if (drawWireframes) {
-            if (drawMesh) draw(mesh, uniforms, true);
-            if (drawSpheres) draw(spheres, uniforms, true);
-            if (drawCylinders) draw(cylinders, uniforms, true);
+            glDisable(GL_CULL_FACE);
+            glDepthRange(0.0, 0.01);
+            if (drawMesh) draw(mesh, uniforms, meshWireframeProgram);
+            if (drawSpheres) draw(spheres, uniforms, sphereWireframeProgram);
+            if (drawCylinders) draw(cylinders, uniforms, cylinderWireframeProgram);
         }
 
         ImGui::Render();
