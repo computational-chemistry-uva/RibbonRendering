@@ -71,17 +71,29 @@ GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
 DrawObject createMesh(std::vector<glm::vec3> &points) {
     // Create vertex data
     std::vector<float> vertices;
-    for (int i = 0; i < points.size(); i++) {
-        vertices.push_back(points[i].x);
-        vertices.push_back(points[i].y);
-        vertices.push_back(points[i].z);
-        // TODO Normals
-        int a = std::max(i - 1, 0);
-        int b = std::min(i + 1, 2);
-        glm::vec3 v = glm::normalize(points[b] - points[a]);
-        vertices.push_back(v.x);
-        vertices.push_back(v.y);
-        vertices.push_back(v.z);
+    for (int i = 0; i < points.size(); i += 3) {
+        glm::vec3 a = points[i];
+        glm::vec3 b = points[i + 1];
+        glm::vec3 c = points[i + 2];
+        glm::vec3 normal = glm::cross(b - a, c - a);
+        vertices.push_back(a.x);
+        vertices.push_back(a.y);
+        vertices.push_back(a.z);
+        vertices.push_back(normal.x);
+        vertices.push_back(normal.y);
+        vertices.push_back(normal.z);
+        vertices.push_back(b.x);
+        vertices.push_back(b.y);
+        vertices.push_back(b.z);
+        vertices.push_back(normal.x);
+        vertices.push_back(normal.y);
+        vertices.push_back(normal.z);
+        vertices.push_back(c.x);
+        vertices.push_back(c.y);
+        vertices.push_back(c.z);
+        vertices.push_back(normal.x);
+        vertices.push_back(normal.y);
+        vertices.push_back(normal.z);
     }
 
     // Create buffers
