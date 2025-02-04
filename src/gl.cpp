@@ -150,6 +150,7 @@ DrawObject createSpheres(std::vector<glm::vec3> &points) {
     };
 };
 
+// TODO Varying cylinder width
 // TODO This and the cylinder shaders could be split and optimized for the simple cylinder or helix case.
 //      For example, helices do not form splines so they don't need cut planes.
 //      Then they also only need one cap quad because the other always faces away from the camera.
@@ -173,6 +174,10 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
         else {
             bCPN = glm::normalize(glm::normalize(points[i + 2] - b) - glm::normalize(a - b));
         }
+        // TODO Compute meaningful value for startDir
+        //      It should be perpendicular to the cylinder axis!
+        //      Currently this will produce artifacts if a cylinder is pointing in the x direction
+        glm::vec3 startDir(1.0f, 0.0f, 0.0f);
         for (int j = 0; j < 18; j++) {
             vertices.push_back(a.x);
             vertices.push_back(a.y);
@@ -186,6 +191,9 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
             vertices.push_back(bCPN.x);
             vertices.push_back(bCPN.y);
             vertices.push_back(bCPN.z);
+            vertices.push_back(startDir.x);
+            vertices.push_back(startDir.y);
+            vertices.push_back(startDir.z);
         }
     }
 
@@ -199,17 +207,20 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
     // A position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     // B position plane normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
     // A cut plane normal attribute
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)(6 * sizeof(float)));
     glEnableVertexAttribArray(2);
     // B cut plane normal attribute
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 12 * sizeof(float), (void*)(9 * sizeof(float)));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)(9 * sizeof(float)));
     glEnableVertexAttribArray(3);
+    // Start dir attribute
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)(12 * sizeof(float)));
+    glEnableVertexAttribArray(4);
 
     return DrawObject {
         vbo,

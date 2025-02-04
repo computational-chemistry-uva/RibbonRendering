@@ -3,6 +3,7 @@ layout (location = 0) in vec3 in_aPos;
 layout (location = 1) in vec3 in_bPos;
 layout (location = 2) in vec3 in_aCutPlaneNormal;
 layout (location = 3) in vec3 in_bCutPlaneNormal;
+layout (location = 4) in vec3 in_startDir;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -16,7 +17,7 @@ out vec3 bCoord; // Barycentric coordinates, for wireframe shader
 out vec3 fOrigin;
 out vec3 fA;
 out vec3 fB;
-out vec3 startDir;
+out vec3 fStartDir;
 out vec3 fACPN;
 out vec3 fBCPN;
 
@@ -105,7 +106,5 @@ void main() {
     fPos = pos;
     fCol = vec3(1.0);
     bCoord = BARYCENTRIC[vID % 6];
-
-    vec3 _startDir = vec3(1.0, 0.0, 0.0); // TODO Start dir as vertex attribute
-    startDir = normalize(transpose(inverse(mat3(view))) * _startDir);
+    fStartDir = normalize(transpose(inverse(mat3(view * model))) * in_startDir);
 }

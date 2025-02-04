@@ -5,7 +5,7 @@ in vec3 fPos;
 in vec3 fCol;
 in vec3 fA;
 in vec3 fB;
-in vec3 startDir;
+in vec3 fStartDir;
 in vec3 fACPN;
 in vec3 fBCPN;
 
@@ -53,7 +53,7 @@ void main() {
     if (cylinderMode == 2) { // Helix
         float nTurns = length(ab) / pitch;
         float angle = nTurns * ct * 2.0 * PI;
-        vec3 helixX = normalize(startDir);
+        vec3 helixX = normalize(fStartDir);
         vec3 helixY = normalize(cross(ab, helixX));
         vec3 helixDir = helixX * cos(angle) + helixY * sin(angle);
 
@@ -71,8 +71,6 @@ void main() {
             normal = normalize(pos - p);
 
             float angle = nTurns * ct * 2.0 * PI;
-            vec3 helixX = normalize(startDir);
-            vec3 helixY = normalize(cross(ab, helixX));
             vec3 helixDir = helixX * cos(angle) + helixY * sin(angle);
 
             if (1.0 - dot(normal, helixDir) > 2.0 * width) {
