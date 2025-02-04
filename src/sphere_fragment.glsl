@@ -11,7 +11,6 @@ uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
 
-uniform vec3 viewPos;
 uniform vec3 lightPos;
 uniform float lightIntensity;
 uniform int drawNormals;
@@ -21,7 +20,9 @@ uniform int raytraced;
 void main() {
     vec3 pos;
     vec3 normal;
+
     if (raytraced != 0) {
+        // Raytrace sphere primitive
         vec3 d = normalize(fPos);
         vec3 s = fOrigin;
         float a = 1.0;
@@ -38,6 +39,7 @@ void main() {
         normal = normalize(pos - fOrigin);
     }
     else {
+        // Fake sphere primitive based on texture coordinates
         float distSqr = dot(fCoord, fCoord);
         if (distSqr > 1.0) {
             discard;
@@ -46,29 +48,28 @@ void main() {
         normal = normalize(pos - fOrigin);
     }
 
-    /* vec3 vp = vec3(view * vec4(viewPos, 1.0)); */
-    vec3 vp = vec3(0.0);
-    vec3 lp = vec3(view * vec4(lightPos, 1.0));
-
-    vec3 albedo = fCol;
-    float diffuse = 1.0;
-    float specular = 0.0;
     if (drawNormals != 0) {
+        // Color fragment based on normals
         FragColor = vec4(normal * 0.5 + 0.5, 1.0);
     }
     else {
+        // Lighting calculations
+        vec3 vp = vec3(0.0);
+        vec3 lp = lightPos;
         vec3 viewDir = normalize(vp - pos);
         vec3 lightDir = normalize(lp - pos);
         vec3 reflectDir = reflect(-lightDir, normal);
         float d = dot(normal, lightDir);
+
+        vec3 albedo = fCol;
         float ambient = 0.1;
-        diffuse = max(d, 0.0);
-        specular = pow(max(dot(viewDir, reflectDir), 0.0), 64);
+        float diffuse = max(d, 0.0);
+        float specular = pow(max(dot(viewDir, reflectDir), 0.0), 64);
         FragColor = vec4(albedo * (ambient + (diffuse + specular) * lightIntensity), 1.0);
     }
 
-    // NOTE writing to depth buffer can decrease performance because it prevents early depth test
-    // I can't make it toggleable because setting gl_FragDepth in any branch causes this
+    // NOTE Writing to depth buffer can decrease performance because it prevents early depth test
+    //      Can't make it toggleable because setting gl_FragDepth in any branch causes this
     vec4 clipPos = projection * vec4(pos, 1.0);
     float depth = clipPos.z / clipPos.w;
     gl_FragDepth = ((gl_DepthRange.diff * depth) + gl_DepthRange.near + gl_DepthRange.far) / 2.0;

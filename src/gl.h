@@ -10,6 +10,9 @@ struct DrawObject {
 };
 
 // Uniform data to send to shaders
+// TODO Get rid of viewPos and update vertex shaders
+// TODO Some of these should be vertex attributes so that multiple instances
+//      with different parameters can be drawn in one draw call
 struct Uniforms {
     glm::mat4 model;
     glm::mat4 view;

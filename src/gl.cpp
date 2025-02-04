@@ -66,8 +66,6 @@ GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
     return shaderProgram;
 }
 
-// TODO Add note about index-based rendering with vertex shaders
-
 DrawObject createMesh(std::vector<glm::vec3> &points) {
     // Create vertex data
     std::vector<float> vertices;
@@ -119,6 +117,8 @@ DrawObject createMesh(std::vector<glm::vec3> &points) {
     };
 };
 
+// NOTE We have to upload the same vertex multiple times so the vertex shader can displace them and form a quad.
+//      Can't reuse the same vertex with indexed drawing because of the way gl_VertexID works.
 DrawObject createSpheres(std::vector<glm::vec3> &points) {
     // Create vertex data
     std::vector<float> vertices;
@@ -150,12 +150,16 @@ DrawObject createSpheres(std::vector<glm::vec3> &points) {
     };
 };
 
+// TODO This and the cylinder shaders could be split and optimized for the simple cylinder or helix case.
+//      For example, helices do not form splines so they don't need cut planes.
+//      Then they also only need one cap quad because the other always faces away from the camera.
 DrawObject createCylinders(std::vector<glm::vec3> &points) {
     // Create vertex data
     std::vector<float> vertices;
     for (int i = 0; i < points.size() - 1; i++) {
         glm::vec3 a = points[i];
         glm::vec3 b = points[i + 1];
+        // Calculate cut plane normals
         glm::vec3 aCPN, bCPN;
         if (i < 1) {
             aCPN = glm::normalize(b - a);
@@ -169,7 +173,6 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
         else {
             bCPN = glm::normalize(glm::normalize(points[i + 2] - b) - glm::normalize(a - b));
         }
-        // TODO For helices, only draw one cap quad
         for (int j = 0; j < 18; j++) {
             vertices.push_back(a.x);
             vertices.push_back(a.y);

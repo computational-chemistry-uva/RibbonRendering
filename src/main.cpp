@@ -294,7 +294,8 @@ int main() {
 
         // Set camera and light position uniforms
         uniforms.viewPos = glm::inverse(uniforms.view) * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-        uniforms.lightPos = glm::vec3(3.0f, 3.5f, 2.5f);
+        // Precompute light position in view space
+        uniforms.lightPos = uniforms.view * glm::vec4(3.0f, 3.5f, 2.5f, 1.0f);
 
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

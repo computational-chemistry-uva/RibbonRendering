@@ -15,7 +15,6 @@ out vec2 fCoord;
 out vec3 bCoord; // Barycentric coordinates, for wireframe shader
 out vec3 fOrigin;
 
-// TODO Put offsets in VBO?
 vec2 OFFSETS[6] = vec2[](
     vec2(-1.0, -1.0),
     vec2( 1.0, -1.0),
