@@ -4,6 +4,7 @@
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
 #include "backends/imgui_impl_opengl3.h"
+#include <glm/ext/scalar_constants.hpp>
 #include <iostream>
 
 // NOTE This currently does not handle deletion of GL resources, they are kept alive until termination of the program.
@@ -160,12 +161,19 @@ int main() {
 
     // Create Objects
     std::vector<glm::vec3> points = {
-        glm::vec3(0.0f, 0.0f, 0.5f),
-        glm::vec3(0.0f, 0.0f, -0.5f),
-        glm::vec3(0.0f, 0.5f, -1.0f),
+        //glm::vec3(0.0f, 0.0f, 0.5f),
+        //glm::vec3(0.0f, 0.0f, -0.5f),
+        //glm::vec3(0.0f, 0.5f, -1.0f),
     };
-    DrawObject mesh = createMesh(points);
+    for (int i = 0; i < 6; ++i) {
+        float angle = i * glm::pi<float>() / 3.0f;
+        float y = 1.0f / glm::sqrt(3.0f) * cos(angle);
+        float z = 1.0f / glm::sqrt(3.0f) * sin(angle);
+        points.emplace_back(0.0f, y, z);
+    }
+    DrawObject mesh = createNGonMesh(points);
     DrawObject spheres = createSpheres(points);
+    points.push_back(points[0]); // Close loop
     DrawObject cylinders = createCylinders(points);
 
     // Set default parameters
@@ -175,16 +183,16 @@ int main() {
     uniforms.sphereRadius = 0.25f;
     uniforms.raytraced = true;
     uniforms.cylinderRadius = 0.1f;
-    uniforms.cylinderMode = 2;
+    uniforms.cylinderMode = 0;
     uniforms.pitch = 0.5f;
     uniforms.width = 0.25f;
-    float camYaw = -45.0f;
-    float camPitch = 30.0f;
-    float camDist = 5.0f;
+    float camYaw = -90.0f;
+    float camPitch = 0.0f;
+    float camDist = 3.0f;
     float fov = 45.0f;
-    bool drawWireframes = true;
+    bool drawWireframes = false;
     bool drawMesh = false;
-    bool drawSpheres = false;
+    bool drawSpheres = true;
     bool drawCylinders = true;
 
     // Main loop

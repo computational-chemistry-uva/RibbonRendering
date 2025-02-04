@@ -31,7 +31,7 @@ struct Uniforms {
 GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath);
 
 // Helper functions to create DrawObjects from a set of input points
-DrawObject createMesh(std::vector<glm::vec3> &points) ;
+DrawObject createNGonMesh(std::vector<glm::vec3> &points) ;
 DrawObject createSpheres(std::vector<glm::vec3> &points) ;
 DrawObject createCylinders(std::vector<glm::vec3> &points) ;
 

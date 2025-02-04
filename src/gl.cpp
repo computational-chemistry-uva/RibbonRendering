@@ -66,13 +66,13 @@ GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
     return shaderProgram;
 }
 
-DrawObject createMesh(std::vector<glm::vec3> &points) {
+DrawObject createNGonMesh(std::vector<glm::vec3> &points) {
     // Create vertex data
     std::vector<float> vertices;
-    for (int i = 0; i < points.size(); i += 3) {
-        glm::vec3 a = points[i];
-        glm::vec3 b = points[i + 1];
-        glm::vec3 c = points[i + 2];
+    for (int i = 1; i < points.size() - 1; i++) {
+        glm::vec3 a = points[0];
+        glm::vec3 b = points[i];
+        glm::vec3 c = points[i + 1];
         glm::vec3 normal = glm::cross(b - a, c - a);
         vertices.push_back(a.x);
         vertices.push_back(a.y);
