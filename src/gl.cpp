@@ -230,8 +230,6 @@ void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms) {
     glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, glm::value_ptr(uniforms.view));
     uniformLoc = glGetUniformLocation(shaderProgram, "projection");
     glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, glm::value_ptr(uniforms.projection));
-    uniformLoc = glGetUniformLocation(shaderProgram, "viewPos");
-    glUniform3f(uniformLoc, uniforms.viewPos.x, uniforms.viewPos.y, uniforms.viewPos.z);
     uniformLoc = glGetUniformLocation(shaderProgram, "lightPos");
     glUniform3f(uniformLoc, uniforms.lightPos.x, uniforms.lightPos.y, uniforms.lightPos.z);
     uniformLoc = glGetUniformLocation(shaderProgram, "drawNormals");

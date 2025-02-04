@@ -4,7 +4,6 @@ layout (location = 0) in vec3 aPos;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
-uniform vec3 viewPos;
 uniform float sphereRadius;
 uniform int raytraced;
 
@@ -36,19 +35,21 @@ vec3 BARYCENTRIC[6] = vec3[](
 void main() {
     int vID = gl_VertexID % 6;
 
-    vec3 worldPos = vec3(model * vec4(aPos, 1.0));
-    vec3 worldNormal = normalize(viewPos - worldPos);
-    vec3 right = normalize(cross(worldNormal, vec3(0.0, 1.0, 0.0)));
-    vec3 up = cross(worldNormal, right);
+    vec3 viewPos = vec3(0.0);
+    vec3 originPos = vec3(view * model * vec4(aPos, 1.0));
+    vec3 normal = normalize(viewPos - originPos);
+    vec3 viewUp = normalize(transpose(inverse(mat3(view))) * vec3(0.0, 1.0, 0.0));
+    vec3 u = cross(normal, viewUp);
+    vec3 v = cross(normal, u);
     vec2 coords = OFFSETS[vID];
-    vec3 pos = worldPos + coords.x * sphereRadius * right + coords.y * sphereRadius * up;
-    if (raytraced != 0) pos += 0.25 * sphereRadius * worldNormal; // Avoid clipping due to perspective distortion
+    vec3 pos = originPos + coords.x * sphereRadius * u + coords.y * sphereRadius * v;
+    if (raytraced != 0) pos += 0.25 * sphereRadius * normal; // Avoid clipping due to perspective distortion
 
-    gl_Position = projection * view * vec4(pos, 1.0);
-    fPos = vec3(view * vec4(pos, 1.0));
-    fNorm = normalize(transpose(inverse(mat3(view))) * worldNormal);
+    gl_Position = projection * vec4(pos, 1.0);
+    fPos = pos;
+    fNorm = normal;
     fCol = vec3(1.0, 0.5, 0.5);
     fCoord = coords;
     bCoord = BARYCENTRIC[vID];
-    fOrigin = vec3(view * vec4(worldPos, 1.0));
+    fOrigin = originPos;
 }
