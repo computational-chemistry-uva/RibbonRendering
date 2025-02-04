@@ -39,7 +39,7 @@ void main() {
     vec3 originPos = vec3(view * model * vec4(aPos, 1.0));
     vec3 normal = normalize(viewPos - originPos);
     vec3 viewUp = normalize(transpose(inverse(mat3(view))) * vec3(0.0, 1.0, 0.0));
-    vec3 u = cross(normal, viewUp);
+    vec3 u = normalize(cross(normal, viewUp));
     vec3 v = cross(normal, u);
     vec2 coords = OFFSETS[vID];
     vec3 pos = originPos + coords.x * sphereRadius * u + coords.y * sphereRadius * v;
