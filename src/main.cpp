@@ -135,28 +135,28 @@ int main() {
 
     // Load and compile shaders
     GLuint meshWireframeProgram = createShaderProgram(
-        "../src/mesh_vertex.glsl",
-        "../src/wireframe_fragment.glsl"
+        "../src/shaders/mesh_vertex.glsl",
+        "../src/shaders/wireframe_fragment.glsl"
     );
     GLuint meshProgram = createShaderProgram(
-        "../src/mesh_vertex.glsl",
-        "../src/mesh_fragment.glsl"
+        "../src/shaders/mesh_vertex.glsl",
+        "../src/shaders/mesh_fragment.glsl"
     );
     GLuint sphereWireframeProgram = createShaderProgram(
-        "../src/sphere_vertex.glsl",
-        "../src/wireframe_fragment.glsl"
+        "../src/shaders/sphere_vertex.glsl",
+        "../src/shaders/wireframe_fragment.glsl"
     );
     GLuint sphereProgram = createShaderProgram(
-        "../src/sphere_vertex.glsl",
-        "../src/sphere_fragment.glsl"
+        "../src/shaders/sphere_vertex.glsl",
+        "../src/shaders/sphere_fragment.glsl"
     );
     GLuint cylinderWireframeProgram = createShaderProgram(
-        "../src/cylinder_vertex.glsl",
-        "../src/wireframe_fragment.glsl"
+        "../src/shaders/cylinder_vertex.glsl",
+        "../src/shaders/wireframe_fragment.glsl"
     );
     GLuint cylinderProgram = createShaderProgram(
-        "../src/cylinder_vertex.glsl",
-        "../src/cylinder_fragment.glsl"
+        "../src/shaders/cylinder_vertex.glsl",
+        "../src/shaders/cylinder_fragment.glsl"
     );
 
     // Create Objects
