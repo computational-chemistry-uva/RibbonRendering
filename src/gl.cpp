@@ -1,7 +1,6 @@
 #include "gl.h"
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <algorithm>
 #include <iostream>
 #include <cmath>
 #include <fstream>
@@ -10,6 +9,39 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <vector>
+
+void Camera::update(MouseState mouse) {
+    if (mouse.leftButtonDown) {
+        yaw += mouse.dx * 0.2f;
+        pitch += mouse.dy * 0.2f;
+        pitch = glm::clamp(pitch, -90.0f, 90.0f);
+        yaw = fmod(yaw + 360.0f, 360.0f);
+    }
+    dist = (1.0f - 0.25f * mouse.dscroll) * dist;
+    dist = glm::clamp(dist, 1.0f, 10.0f);
+}
+
+void Uniforms::updateMatrices(GLFWwindow *window, Camera &camera) {
+    // Create projection matrix
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+    projection = glm::perspective(
+        glm::radians(camera.fov),   // Field of view
+        float(w) / float(h),        // Aspect ratio
+        0.1f,                       // Near plane
+        100.0f                      // Far plane
+    );
+    // Create view matrix
+    view = glm::mat4(1.0f);
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -camera.dist));
+    view = glm::rotate(view, glm::radians(camera.pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+    view = glm::rotate(view, glm::radians(camera.yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+    // Create model matrix
+    model = glm::mat4(1.0f);
+
+    // Precompute light position in view space
+    lightPos = view * glm::vec4(3.0f, 3.5f, 2.5f, 1.0f);
+}
 
 // Helper function to read shader from file
 std::string readShaderFile(const char* filePath) {

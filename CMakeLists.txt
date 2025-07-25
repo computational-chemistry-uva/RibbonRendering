@@ -41,6 +41,7 @@ include_directories(${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 add_executable(${WORKSPACE_NAME}
     ${IMGUI_SOURCES}
     src/gl.cpp
+    src/window.cpp
     src/main.cpp
 )
 
