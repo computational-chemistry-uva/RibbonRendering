@@ -4,6 +4,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <vector>
 #include "input.h"
+#include "spline.h"
 
 // NOTE This currently does not handle deletion of GL resources, they are kept alive until termination of the program.
 
@@ -15,9 +16,9 @@ struct DrawObject {
 };
 
 struct Camera {
-    float yaw = -90.0f; 
+    float yaw = 0.0f; 
     float pitch = 0.0f; 
-    float dist = 3.0f;  
+    float dist = 7.0f;  
     float fov = 45.0f;  
 
     // Update camera parameters based on mouse state
@@ -76,9 +77,10 @@ struct Shaders {
 };
 
 // Helper functions to create DrawObjects from a set of input points
-DrawObject createNGonMesh(std::vector<glm::vec3> &points) ;
-DrawObject createSpheres(std::vector<glm::vec3> &points) ;
-DrawObject createCylinders(std::vector<glm::vec3> &points) ;
+DrawObject createNGonMesh(std::vector<glm::vec3> &points);
+DrawObject createTubeMesh(const BSpline& spline, int samples, int segments, float radius);
+DrawObject createSpheres(std::vector<glm::vec3> &points);
+DrawObject createCylinders(std::vector<glm::vec3> &points);
 
 // Draw DrawObject with given shader and uniform values
 void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms);

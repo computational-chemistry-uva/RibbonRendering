@@ -26,9 +26,9 @@ void initImGui(GLFWwindow* window) {
 struct Settings {
     Uniforms uniforms;
     bool drawWireframes = false;
-    bool drawMesh = false;
+    bool drawMesh = true;
     bool drawSpheres = true;
-    bool drawCylinders = true;
+    bool drawCylinders = false;
 };
 
 std::vector<glm::vec3> nGonPoints(uint n) {
@@ -121,13 +121,6 @@ int main() {
     // Load and compile shaders
     Shaders shaders;
 
-    // Create Objects
-    std::vector<glm::vec3> points = nGonPoints(6);
-    DrawObject mesh = createNGonMesh(points);
-    DrawObject spheres = createSpheres(points);
-    points.push_back(points[0]); // Close loop
-    DrawObject cylinders = createCylinders(points);
-
     // Set default parameters
     Camera camera;
     Settings settings;
@@ -135,6 +128,58 @@ int main() {
     // Create input struct and let GLFW access it
     MouseState mouse;
     glfwSetWindowUserPointer(window, &mouse);
+
+    // Create spline
+    std::vector<glm::vec3> controlPoints = {
+        glm::vec3(0.0f, -2.0f, 0.0f),
+        glm::vec3(2.0f, -1.0f, 1.0f),
+        glm::vec3(-1.0f, 0.0f, 1.0f),
+        glm::vec3(2.0f, 1.0f, -1.0f),
+        glm::vec3(1.0f, 2.0f, 2.0f)
+
+        //glm::vec3(-2.0f, -2.0f, 0.0f),
+        //glm::vec3(0.0f, -2.0f, 0.0f),
+        //glm::vec3(2.0f, -2.0f, 0.0f),
+        //glm::vec3(2.0f, 0.0f, 0.0f),
+        //glm::vec3(0.0f, 0.0f, 0.0f),
+        //glm::vec3(-2.0f, 0.0f, 0.0f),
+        //glm::vec3(-2.0f, 2.0f, 0.0f),
+        //glm::vec3(0.0f, 2.0f, 0.0f),
+        //glm::vec3(2.0f, 2.0f, 0.0f),
+    };
+    std::vector<glm::vec3> orientationVectors = {
+        //glm::vec3(0.0f, -1.0f, 0.0f),
+        //glm::vec3(0.0f, -1.0f, 0.0f),
+        //glm::normalize(glm::vec3(1.0f, -1.0f, 0.0f)),
+        //glm::vec3(1.0f, 0.0f, 0.0f),
+        //glm::vec3(0.0f, 1.0f, 0.0f),
+        //glm::normalize(glm::vec3(-1.0f, 1.0f, 0.0f)),
+        //glm::normalize(glm::vec3(-1.0f, -1.0f, 0.0f)),
+        //glm::vec3(0.0f, -1.0f, 0.0f),
+        //glm::vec3(0.0f, -1.0f, 0.0f),
+    };
+    for (int i = 1; i < controlPoints.size() - 1; i++) {
+        glm::vec3 a = controlPoints[i - 1];
+        glm::vec3 b = controlPoints[i];
+        glm::vec3 c = controlPoints[i + 1];
+        glm::vec3 n = glm::normalize((b - c) + (b - a));
+        orientationVectors.push_back(n);
+    }
+    orientationVectors.insert(orientationVectors.begin(), orientationVectors[0]);
+    orientationVectors.push_back(orientationVectors.back());
+    BSpline spline(controlPoints, orientationVectors, 2);
+    auto curvePoints = spline.generateCurve(20);
+    //for (glm::vec3 p : curvePoints) {
+    //    std::cout << p.x << ", " << p.y << ", " << p.z << ")\n";
+    //}
+
+    // Create Objects
+    DrawObject mesh = createTubeMesh(spline, 50, 12, 0.25f);
+    DrawObject spheres = createSpheres(controlPoints);
+    DrawObject cylinders = createCylinders(curvePoints);
+
+    // Debug the parameter distribution
+    BSpline curve(controlPoints, orientationVectors, 3);
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -158,6 +203,7 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Draw objects
+        glShadeModel(GL_SMOOTH);
         glEnable(GL_CULL_FACE);
         glDepthRange(0.0, 1.0);
         if (settings.drawMesh) draw(mesh, shaders.meshProgram, settings.uniforms);
