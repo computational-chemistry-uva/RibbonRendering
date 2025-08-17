@@ -10,9 +10,11 @@
 
 // Simple struct to help with drawing
 struct DrawObject {
-    GLuint vbo;
     GLuint vao;
+    GLuint vbo;
+    GLuint ibo;
     unsigned int nVertices;
+    unsigned int nIndices; // 0 to use non-indexed drawing
 };
 
 struct Camera {
@@ -77,7 +79,6 @@ struct Shaders {
 };
 
 // Helper functions to create DrawObjects from a set of input points
-DrawObject createNGonMesh(std::vector<glm::vec3> &points);
 DrawObject createTubeMesh(const BSpline& spline, int samples, int segments, float radius);
 DrawObject createSpheres(std::vector<glm::vec3> &points);
 DrawObject createCylinders(std::vector<glm::vec3> &points);

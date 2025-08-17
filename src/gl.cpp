@@ -98,16 +98,20 @@ GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
     return shaderProgram;
 }
 
-DrawObject createMesh(std::vector<float> &vertices) {
+DrawObject createMesh(std::vector<float> &vertices, std::vector<unsigned int> &indices) {
     // Create buffers
-    GLuint vao, vbo;
+    GLuint vao, vbo, ibo;
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
+    glGenBuffers(1, &ibo);
     // Bind VAO first
     glBindVertexArray(vao);
     // Bind and fill VBO
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    // Bind and fill IBO
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
     // Position attribute
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
@@ -116,45 +120,15 @@ DrawObject createMesh(std::vector<float> &vertices) {
     glEnableVertexAttribArray(1);
 
     return DrawObject {
+        vao,
         vbo,
-            vao,
-            unsigned(vertices.size() / 6)
+        ibo,
+        unsigned(vertices.size() / 6),
+        unsigned(indices.size()),
     };
 }
 
-DrawObject createNGonMesh(std::vector<glm::vec3> &points) {
-    // Create vertex data
-    std::vector<float> vertices;
-    for (int i = 1; i < points.size() - 1; i++) {
-        glm::vec3 a = points[0];
-        glm::vec3 b = points[i];
-        glm::vec3 c = points[i + 1];
-        glm::vec3 normal = glm::cross(b - a, c - a);
-        vertices.push_back(a.x);
-        vertices.push_back(a.y);
-        vertices.push_back(a.z);
-        vertices.push_back(normal.x);
-        vertices.push_back(normal.y);
-        vertices.push_back(normal.z);
-        vertices.push_back(b.x);
-        vertices.push_back(b.y);
-        vertices.push_back(b.z);
-        vertices.push_back(normal.x);
-        vertices.push_back(normal.y);
-        vertices.push_back(normal.z);
-        vertices.push_back(c.x);
-        vertices.push_back(c.y);
-        vertices.push_back(c.z);
-        vertices.push_back(normal.x);
-        vertices.push_back(normal.y);
-        vertices.push_back(normal.z);
-    }
-    return createMesh(vertices);
-};
-
 DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loopResolution = 8, float radius = 1.0f) {
-    std::vector<float> vertices;
-    
     // Generate points along the spline
     std::vector<glm::vec3> splinePoints;
     std::vector<glm::vec3> tangents;
@@ -162,7 +136,7 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
     std::vector<glm::vec3> binormals;
 
     float totalLength = spline.arcLength(1.0f);
-    
+
     for (int i = 0; i < splineSamples; i++) {
         float targetLength = float(i) / float(splineSamples - 1) * totalLength;
         float t = spline.parameterFromArcLength(targetLength, totalLength);
@@ -190,17 +164,15 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
         //std::cout << std::endl;
         binormals.push_back(binormal);
     }
-    
+
     // Create cross-section circles for each spline point
     std::vector<std::vector<glm::vec3>> rings(splineSamples);
-    
     for (int i = 0; i < splineSamples; i++) {
         float t = float(i) / float(splineSamples - 1);
         glm::vec3 center = splinePoints[i];
         glm::vec3 tangent = tangents[i];
         glm::vec3 normal = normals[i];
         glm::vec3 binormal = binormals[i];
-
         // Generate circle points using interpolated orientation
         rings[i].resize(loopResolution);
         for (int j = 0; j < loopResolution; j++) {
@@ -212,33 +184,77 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
             rings[i][j] = center + offset;
         }
     }
-    
+
     // Generate triangles between consecutive rings
+    unsigned int totalVertices = splineSamples * loopResolution;
+    std::vector<float> vertices(totalVertices * 6);
+    std::vector<unsigned int> indices;
+    // Fill positions first
+    for (int i = 0; i < splineSamples; i++) {
+        for (int j = 0; j < loopResolution; j++) {
+            int vertexIndex = (i * loopResolution + j) * 6;
+            glm::vec3 pos = rings[i][j];
+            vertices[vertexIndex] = pos.x;
+            vertices[vertexIndex + 1] = pos.y;
+            vertices[vertexIndex + 2] = pos.z;
+        }
+    }
+    // Calculate averaged normals for each vertex
+    std::vector<glm::vec3> vertexNormals(totalVertices, glm::vec3(0.0f));
+    std::vector<int> normalCounts(totalVertices, 0);
     for (int i = 0; i < splineSamples - 1; i++) {
         for (int j = 0; j < loopResolution; j++) {
             int next_j = (j + 1) % loopResolution;
-            
-            // Current ring vertices
-            glm::vec3 v0 = rings[i][j];
-            glm::vec3 v1 = rings[i][next_j];
-            glm::vec3 v2 = rings[i + 1][j];
-            glm::vec3 v3 = rings[i + 1][next_j];
-            
+
+            // Vertex indices for the quad
+            unsigned int v0 = i * loopResolution + j;
+            unsigned int v1 = i * loopResolution + next_j;
+            unsigned int v2 = (i + 1) * loopResolution + j;
+            unsigned int v3 = (i + 1) * loopResolution + next_j;
+
+            // Get vertex positions
+            glm::vec3 pos0 = rings[i][j];
+            glm::vec3 pos1 = rings[i][next_j];
+            glm::vec3 pos2 = rings[i + 1][j];
+            glm::vec3 pos3 = rings[i + 1][next_j];
+
             // First triangle (v0, v1, v2)
-            glm::vec3 normal1 = glm::normalize(glm::cross(v1 - v0, v2 - v0));
-            vertices.insert(vertices.end(), {v0.x, v0.y, v0.z, normal1.x, normal1.y, normal1.z});
-            vertices.insert(vertices.end(), {v1.x, v1.y, v1.z, normal1.x, normal1.y, normal1.z});
-            vertices.insert(vertices.end(), {v2.x, v2.y, v2.z, normal1.x, normal1.y, normal1.z});
-            
+            glm::vec3 normal1 = glm::normalize(glm::cross(pos1 - pos0, pos2 - pos0));
+            indices.insert(indices.end(), {v0, v1, v2});
+
+            // Accumulate normal for each vertex of first triangle
+            vertexNormals[v0] += normal1;
+            vertexNormals[v1] += normal1;
+            vertexNormals[v2] += normal1;
+            normalCounts[v0]++;
+            normalCounts[v1]++;
+            normalCounts[v2]++;
+
             // Second triangle (v1, v3, v2)
-            glm::vec3 normal2 = glm::normalize(glm::cross(v3 - v1, v2 - v1));
-            vertices.insert(vertices.end(), {v1.x, v1.y, v1.z, normal2.x, normal2.y, normal2.z});
-            vertices.insert(vertices.end(), {v3.x, v3.y, v3.z, normal2.x, normal2.y, normal2.z});
-            vertices.insert(vertices.end(), {v2.x, v2.y, v2.z, normal2.x, normal2.y, normal2.z});
+            glm::vec3 normal2 = glm::normalize(glm::cross(pos3 - pos1, pos2 - pos1));
+            indices.insert(indices.end(), {v1, v3, v2});
+
+            // Accumulate normal for each vertex of second triangle
+            vertexNormals[v1] += normal2;
+            vertexNormals[v3] += normal2;
+            vertexNormals[v2] += normal2;
+            normalCounts[v1]++;
+            normalCounts[v3]++;
+            normalCounts[v2]++;
         }
     }
-    
-    return createMesh(vertices);
+    // Average the normals and store them in the vertices array
+    for (int i = 0; i < totalVertices; i++) {
+        if (normalCounts[i] > 0) {
+            glm::vec3 avgNormal = glm::normalize(vertexNormals[i] / float(normalCounts[i]));
+            int normalIndex = i * 6 + 3;
+            vertices[normalIndex] = avgNormal.x;
+            vertices[normalIndex + 1] = avgNormal.y;
+            vertices[normalIndex + 2] = avgNormal.z;
+        }
+    }
+
+    return createMesh(vertices, indices);
 }
 
 // NOTE We have to upload the same vertex multiple times so the vertex shader can displace them and form a quad.
@@ -268,9 +284,11 @@ DrawObject createSpheres(std::vector<glm::vec3> &points) {
     glEnableVertexAttribArray(0);
 
     return DrawObject {
-        vbo,
         vao,
-        unsigned(vertices.size() / 3)
+        vbo,
+        0,
+        unsigned(vertices.size() / 3),
+        0,
     };
 };
 
@@ -347,9 +365,11 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
     glEnableVertexAttribArray(4);
 
     return DrawObject {
-        vbo,
         vao,
-        unsigned(vertices.size() / 12)
+        vbo,
+        0,
+        unsigned(vertices.size() / 12),
+        0,
     };
 };
 
@@ -384,9 +404,14 @@ void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms) {
     uniformLoc = glGetUniformLocation(shaderProgram, "pitch");
     glUniform1f(uniformLoc, uniforms.pitch);
 
-    // Bind VAO
+    // Bind and draw
     glBindVertexArray(object.vao);
-
-    // Draw
-    glDrawArrays(GL_TRIANGLES, 0, object.nVertices);
+    glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
+    if (object.nIndices > 0) {
+        glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
+        glDrawElements(GL_TRIANGLES, object.nIndices, GL_UNSIGNED_INT, 0);
+    }
+    else {
+        glDrawArrays(GL_TRIANGLES, 0, object.nVertices);
+    }
 }
