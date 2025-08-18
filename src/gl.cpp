@@ -18,7 +18,7 @@ void Camera::update(MouseState mouse) {
         yaw = fmod(yaw + 360.0f, 360.0f);
     }
     dist = (1.0f - 0.25f * mouse.dscroll) * dist;
-    dist = glm::clamp(dist, 1.0f, 10.0f);
+    dist = glm::clamp(dist, 1.0f, 20.0f);
 }
 
 void Uniforms::updateMatrices(GLFWwindow *window, Camera &camera) {
