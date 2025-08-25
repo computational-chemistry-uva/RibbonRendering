@@ -179,7 +179,7 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
             float angle = 2.0f * M_PI * float(j) / float(loopResolution);
             float d = glm::sin(angle);
             float n = glm::cos(angle);
-            n = std::clamp(n, -0.25f, 0.25f);
+            d = std::clamp(d, -0.25f, 0.25f);
             glm::vec3 offset = radius * (d * binormal + n * normal);
             rings[i][j] = center + offset;
         }
