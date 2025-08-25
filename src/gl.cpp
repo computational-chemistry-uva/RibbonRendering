@@ -113,17 +113,20 @@ DrawObject createMesh(std::vector<float> &vertices, std::vector<unsigned int> &i
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
     // Normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
     glEnableVertexAttribArray(1);
+    // Texture coordinate attribute
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     return DrawObject {
         vao,
         vbo,
         ibo,
-        unsigned(vertices.size() / 6),
+        unsigned(vertices.size() / 8),
         unsigned(indices.size()),
     };
 }
@@ -187,16 +190,24 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
 
     // Generate triangles between consecutive rings
     unsigned int totalVertices = splineSamples * loopResolution;
-    std::vector<float> vertices(totalVertices * 6);
+    std::vector<float> vertices(totalVertices * 8);
     std::vector<unsigned int> indices;
-    // Fill positions first
+    // Fill positions and texture coordinates
     for (int i = 0; i < splineSamples; i++) {
         for (int j = 0; j < loopResolution; j++) {
-            int vertexIndex = (i * loopResolution + j) * 6;
+            int vertexIndex = (i * loopResolution + j) * 8;
+            // Position
             glm::vec3 pos = rings[i][j];
             vertices[vertexIndex] = pos.x;
             vertices[vertexIndex + 1] = pos.y;
             vertices[vertexIndex + 2] = pos.z;
+            // Normal will be filled later at indices 3, 4, 5
+            // Texture coordinates
+            // TODO Loop seam
+            float u = float(j) / float(loopResolution);
+            float v = float(i) / float(splineSamples - 1);
+            vertices[vertexIndex + 6] = u;
+            vertices[vertexIndex + 7] = v;
         }
     }
     // Calculate averaged normals for each vertex
@@ -247,7 +258,7 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
     for (int i = 0; i < totalVertices; i++) {
         if (normalCounts[i] > 0) {
             glm::vec3 avgNormal = glm::normalize(vertexNormals[i] / float(normalCounts[i]));
-            int normalIndex = i * 6 + 3;
+            int normalIndex = i * 8 + 3;
             vertices[normalIndex] = avgNormal.x;
             vertices[normalIndex + 1] = avgNormal.y;
             vertices[normalIndex + 2] = avgNormal.z;

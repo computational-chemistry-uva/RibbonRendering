@@ -18,10 +18,10 @@ struct DrawObject {
 };
 
 struct Camera {
-    float yaw = 0.0f; 
-    float pitch = 0.0f; 
-    float dist = 7.0f;  
-    float fov = 45.0f;  
+    float yaw = 0.0f;
+    float pitch = 0.0f;
+    float dist = 7.0f;
+    float fov = 45.0f;
 
     // Update camera parameters based on mouse state
     void update(MouseState mouse);

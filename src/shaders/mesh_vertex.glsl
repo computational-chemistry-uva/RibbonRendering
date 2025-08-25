@@ -1,6 +1,7 @@
 #version 330 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 aNorm;
+layout (location = 2) in vec2 aTexCoord;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -8,6 +9,7 @@ uniform mat4 projection;
 
 out vec3 fPos;
 out vec3 fNorm;
+out vec2 fTexCoord;
 out vec3 fCol;
 out vec3 bCoord; // Barycentric coordinates, for wireframe shader
 
@@ -23,6 +25,7 @@ void main() {
     gl_Position = pos;
     fPos = vPos;
     fNorm = normalize(transpose(inverse(mat3(view * model))) * aNorm);
+    fTexCoord = aTexCoord;
     fCol = vec3(1.0);
     bCoord = BARYCENTRIC[gl_VertexID % 3];
 }
