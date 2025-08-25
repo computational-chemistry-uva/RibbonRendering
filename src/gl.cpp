@@ -139,6 +139,7 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
     std::vector<glm::vec3> binormals;
 
     float totalLength = spline.arcLength(1.0f);
+    //std::cout << "Spline length: " << totalLength << std::endl;
 
     for (int i = 0; i < splineSamples; i++) {
         float targetLength = float(i) / float(splineSamples - 1) * totalLength;
@@ -182,28 +183,28 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
             float angle = 2.0f * M_PI * float(j) / float(loopResolution);
             float d = glm::sin(angle);
             float n = glm::cos(angle);
-            d = std::clamp(d, -0.25f, 0.25f);
+            d = std::clamp(d, -0.125f, 0.125f);
             glm::vec3 offset = radius * (d * binormal + n * normal);
             rings[i][j] = center + offset;
         }
     }
 
     // Generate triangles between consecutive rings
-    unsigned int totalVertices = splineSamples * loopResolution;
+    unsigned int totalVertices = splineSamples * (loopResolution + 1);
     std::vector<float> vertices(totalVertices * 8);
     std::vector<unsigned int> indices;
     // Fill positions and texture coordinates
     for (int i = 0; i < splineSamples; i++) {
-        for (int j = 0; j < loopResolution; j++) {
-            int vertexIndex = (i * loopResolution + j) * 8;
+        for (int j = 0; j <= loopResolution; j++) {
+            int vertexIndex = (i * (loopResolution + 1) + j) * 8;
+            int ringIndex = j % loopResolution;
             // Position
-            glm::vec3 pos = rings[i][j];
+            glm::vec3 pos = rings[i][ringIndex];
             vertices[vertexIndex] = pos.x;
             vertices[vertexIndex + 1] = pos.y;
             vertices[vertexIndex + 2] = pos.z;
             // Normal will be filled later at indices 3, 4, 5
             // Texture coordinates
-            // TODO Loop seam
             float u = float(j) / float(loopResolution);
             float v = float(i) / float(splineSamples - 1);
             vertices[vertexIndex + 6] = u;
@@ -215,19 +216,17 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
     std::vector<int> normalCounts(totalVertices, 0);
     for (int i = 0; i < splineSamples - 1; i++) {
         for (int j = 0; j < loopResolution; j++) {
-            int next_j = (j + 1) % loopResolution;
-
             // Vertex indices for the quad
-            unsigned int v0 = i * loopResolution + j;
-            unsigned int v1 = i * loopResolution + next_j;
-            unsigned int v2 = (i + 1) * loopResolution + j;
-            unsigned int v3 = (i + 1) * loopResolution + next_j;
+            unsigned int v0 = i * (loopResolution + 1) + j;
+            unsigned int v1 = i * (loopResolution + 1) + (j + 1);
+            unsigned int v2 = (i + 1) * (loopResolution + 1) + j;
+            unsigned int v3 = (i + 1) * (loopResolution + 1) + (j + 1);
 
             // Get vertex positions
             glm::vec3 pos0 = rings[i][j];
-            glm::vec3 pos1 = rings[i][next_j];
+            glm::vec3 pos1 = rings[i][(j + 1) % loopResolution];
             glm::vec3 pos2 = rings[i + 1][j];
-            glm::vec3 pos3 = rings[i + 1][next_j];
+            glm::vec3 pos3 = rings[i + 1][(j + 1) % loopResolution];
 
             // First triangle (v0, v1, v2)
             glm::vec3 normal1 = glm::normalize(glm::cross(pos1 - pos0, pos2 - pos0));

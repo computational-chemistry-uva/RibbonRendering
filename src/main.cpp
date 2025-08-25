@@ -227,7 +227,7 @@ int main() {
     //}
 
     // Create Objects
-    DrawObject mesh = createTubeMesh(spline, 100, 12, 0.5f);
+    DrawObject mesh = createTubeMesh(spline, 100, 12, 0.75f);
     DrawObject spheres = createSpheres(controlPoints);
     DrawObject cylinders = createCylinders(curvePoints);
 
