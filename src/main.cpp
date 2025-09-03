@@ -27,7 +27,7 @@ struct Settings {
     Uniforms uniforms;
     bool drawWireframes = false;
     bool drawMesh = true;
-    bool drawSpheres = true;
+    bool drawSpheres = false;
     bool drawCylinders = false;
 };
 
@@ -207,6 +207,10 @@ int main() {
     center /= controlPoints.size();
     for (auto &p : controlPoints) {
         p -= center;
+        // NOTE Manual adjustment
+        p.x -= 2.0f;
+        p.y -= 2.0f;
+        p.z += 2.0f;
     }
 
     // Generate orientation vectors
@@ -227,7 +231,7 @@ int main() {
     //}
 
     // Create Objects
-    DrawObject mesh = createTubeMesh(spline, 100, 12, 0.75f);
+    DrawObject mesh = createTubeMesh(spline, 200, 12, 1.0f);
     DrawObject spheres = createSpheres(controlPoints);
     DrawObject cylinders = createCylinders(curvePoints);
 

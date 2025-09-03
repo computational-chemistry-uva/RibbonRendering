@@ -40,7 +40,7 @@ void Uniforms::updateMatrices(GLFWwindow *window, Camera &camera) {
     model = glm::mat4(1.0f);
 
     // Precompute light position in view space
-    lightPos = view * glm::vec4(3.0f, 3.5f, 2.5f, 1.0f);
+    lightPos = view * glm::vec4(1.0f, 1.5f, 4.5f, 1.0f);
 }
 
 // Helper function to read shader from file
@@ -180,10 +180,44 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
         // Generate circle points using interpolated orientation
         rings[i].resize(loopResolution);
         for (int j = 0; j < loopResolution; j++) {
-            float angle = 2.0f * M_PI * float(j) / float(loopResolution);
-            float d = glm::sin(angle);
-            float n = glm::cos(angle);
-            d = std::clamp(d, -0.125f, 0.125f);
+            // TODO Formula for arbitrary width sheet with evenly rounded corners
+
+            //float angle = 2.0f * M_PI * float(j) / float(loopResolution);
+            //float d = glm::sin(angle);
+            //float n = glm::cos(angle);
+
+            //d = std::clamp(d, -0.125f, 0.125f);
+            //n = std::clamp(n, -0.125f, 0.125f);
+            //d /= 5.0f;
+            //n /= 5.0f;
+            //if (n > 0.0f) n += 0.5f;
+            //else if (n < 0.0f) n -= 0.5f;
+            //float d = (j % (loopResolution / 2) == 0) ? 0.0f : 1.0f;
+            //float d = 1.0f;
+
+            int a = j % (loopResolution / 2);
+            float d = (a == 0) ? 0.0f : 0.125f;
+            float n = -((a / (loopResolution / 2.0f - 1.0f)) * 2.0f - 1.0f);
+            if (j < loopResolution / 2) {
+            }
+            else {
+                d *= -1.0f;
+                n *= -1.0f;
+            }
+
+            // Arrows
+            t = fmod(t, 0.1f);
+            float ar = 0.03f;
+            if (t > 2.0f * ar) {
+                n *= 0.25f;
+            }
+            else if (t > ar) {
+                n *= 0.5f;
+            }
+            else {
+                n *= t / ar + 0.25f;
+            }
+
             glm::vec3 offset = radius * (d * binormal + n * normal);
             rings[i][j] = center + offset;
         }
