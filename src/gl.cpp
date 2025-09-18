@@ -227,9 +227,19 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
     unsigned int totalVertices = splineSamples * (loopResolution + 1);
     std::vector<float> vertices(totalVertices * 8);
     std::vector<unsigned int> indices;
+    std::vector<float> distAroundRing(loopResolution + 1);
     // Fill positions and texture coordinates
     for (int i = 0; i < splineSamples; i++) {
-        for (int j = 0; j <= loopResolution; j++) {
+        // First vertex
+        int vertexIndex = (i * (loopResolution + 1)) * 8;
+        int ringIndex = 0;
+        glm::vec3 pos = rings[i][ringIndex];
+        vertices[vertexIndex] = pos.x;
+        vertices[vertexIndex + 1] = pos.y;
+        vertices[vertexIndex + 2] = pos.z;
+        glm::vec3 prevPos = pos;
+        distAroundRing[0] = 0.0f;
+        for (int j = 1; j <= loopResolution; j++) {
             int vertexIndex = (i * (loopResolution + 1) + j) * 8;
             int ringIndex = j % loopResolution;
             // Position
@@ -238,8 +248,14 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
             vertices[vertexIndex + 1] = pos.y;
             vertices[vertexIndex + 2] = pos.z;
             // Normal will be filled later at indices 3, 4, 5
+            distAroundRing[j] = distAroundRing[j - 1] + glm::distance(prevPos, pos);
+            prevPos = pos;
+        }
+        float totalDist = distAroundRing[loopResolution];
+        for (int j = 0; j <= loopResolution; j++) {
+            int vertexIndex = (i * (loopResolution + 1) + j) * 8;
             // Texture coordinates
-            float u = float(j) / float(loopResolution);
+            float u = distAroundRing[j] / totalDist;
             float v = float(i) / float(splineSamples - 1);
             vertices[vertexIndex + 6] = u;
             vertices[vertexIndex + 7] = v;
