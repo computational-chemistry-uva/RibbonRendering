@@ -231,9 +231,15 @@ int main() {
     //}
 
     // Create Objects
-    DrawObject mesh = createTubeMesh(spline, 200, 12, 1.0f);
+    DrawObject lod0 = createTubeMesh(spline, 200, 12, 1.0f);
+    DrawObject lod1 = createTubeMesh(spline, 150, 6, 1.0f);
+    DrawObject lod2 = createTubeMesh(spline, 100, 4, 1.0f);
     DrawObject spheres = createSpheres(controlPoints);
     DrawObject cylinders = createCylinders(curvePoints);
+
+    std::cout << "LOD 0: " << lod0.nVertices << " vertices" << std::endl;
+    std::cout << "LOD 1: " << lod1.nVertices << " vertices" << std::endl;
+    std::cout << "LOD 2: " << lod2.nVertices << " vertices" << std::endl;
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -256,18 +262,30 @@ int main() {
         // Clear screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Select level of detail
+        DrawObject *mesh;
+        if (camera.dist > 40.0f) {
+            mesh = &lod2;
+        }
+        else if (camera.dist > 20.0f) {
+            mesh = &lod1;
+        }
+        else {
+            mesh = &lod0;
+        }
+
         // Draw objects
         glShadeModel(GL_SMOOTH);
         glEnable(GL_CULL_FACE);
         glDepthRange(0.0, 1.0);
-        if (settings.drawMesh) draw(mesh, shaders.meshProgram, settings.uniforms);
+        if (settings.drawMesh) draw(*mesh, shaders.meshProgram, settings.uniforms);
         if (settings.drawSpheres) draw(spheres, shaders.sphereProgram, settings.uniforms);
         if (settings.drawCylinders) draw(cylinders, shaders.cylinderProgram, settings.uniforms);
         if (settings.drawWireframes) {
             // Draw wireframes with no backface culling and on top of everything else
             glDisable(GL_CULL_FACE);
             glDepthRange(0.0, 0.0);
-            if (settings.drawMesh) draw(mesh, shaders.meshWireframeProgram, settings.uniforms);
+            if (settings.drawMesh) draw(*mesh, shaders.meshWireframeProgram, settings.uniforms);
             if (settings.drawSpheres) draw(spheres, shaders.sphereWireframeProgram, settings.uniforms);
             if (settings.drawCylinders) draw(cylinders, shaders.cylinderWireframeProgram, settings.uniforms);
         }

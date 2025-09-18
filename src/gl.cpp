@@ -18,7 +18,7 @@ void Camera::update(MouseState mouse) {
         yaw = fmod(yaw + 360.0f, 360.0f);
     }
     dist = (1.0f - 0.25f * mouse.dscroll) * dist;
-    dist = glm::clamp(dist, 1.0f, 20.0f);
+    dist = glm::clamp(dist, 1.0f, 50.0f);
 }
 
 void Uniforms::updateMatrices(GLFWwindow *window, Camera &camera) {
@@ -206,17 +206,17 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
             }
 
             // Arrows
-            t = fmod(t, 0.1f);
-            float ar = 0.03f;
-            if (t > 2.0f * ar) {
-                n *= 0.25f;
-            }
-            else if (t > ar) {
-                n *= 0.5f;
-            }
-            else {
-                n *= t / ar + 0.25f;
-            }
+            //t = fmod(t, 0.1f);
+            //float ar = 0.03f;
+            //if (t > 2.0f * ar) {
+            //    n *= 0.25f;
+            //}
+            //else if (t > ar) {
+            //    n *= 0.5f;
+            //}
+            //else {
+            //    n *= t / ar + 0.25f;
+            //}
 
             glm::vec3 offset = radius * (d * binormal + n * normal);
             rings[i][j] = center + offset;
