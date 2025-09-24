@@ -19,6 +19,7 @@ pkgs.mkShell {
         cmake
         ninja
         #pkg-config
+        gdb
     ];
 
     shellHook = ''
