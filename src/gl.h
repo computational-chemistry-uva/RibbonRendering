@@ -13,14 +13,17 @@ struct DrawObject {
     GLuint vao;
     GLuint vbo;
     GLuint ibo;
+    std::vector<float> vertices; // TODO Vertex struct
+    std::vector<unsigned int> indices;
+    // TODO Get rid of these
     unsigned int nVertices;
     unsigned int nIndices; // 0 to use non-indexed drawing
 };
 
 struct Camera {
-    float yaw = 0.0f;
-    float pitch = 0.0f;
-    float dist = 7.0f;
+    float yaw = -25.0f;
+    float pitch = 25.0f;
+    float dist = 25.0f;
     float fov = 45.0f;
 
     // Update camera parameters based on mouse state
@@ -36,7 +39,11 @@ struct Uniforms {
     glm::mat4 projection;
     glm::vec3 lightPos;
     bool drawNormals = false;
-    float lightIntensity = 1.0f;
+    bool drawTexture = true;
+    //float lightIntensity = 0.75f;
+    float lightIntensity = 0.0f;
+    //float ambientLightIntensity = 0.25f;
+    float ambientLightIntensity = 1.0f;
     float sphereRadius = 0.25f;
     bool raytraced = true;
     float cylinderRadius = 0.1f;
@@ -79,6 +86,7 @@ struct Shaders {
 };
 
 // Helper functions to create DrawObjects from a set of input points
+DrawObject createMesh(std::vector<float> &vertices, std::vector<unsigned int> &indices);
 DrawObject createTubeMesh(const BSpline& spline, int samples, int segments, float radius);
 DrawObject createSpheres(std::vector<glm::vec3> &points);
 DrawObject createCylinders(std::vector<glm::vec3> &points);

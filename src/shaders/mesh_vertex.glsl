@@ -29,3 +29,16 @@ void main() {
     fCol = vec3(1.0);
     bCoord = BARYCENTRIC[gl_VertexID % 3];
 }
+
+//#version 150 core
+//in vec3 aPos;
+//in vec2 aTexCoord;
+//uniform mat4 view;
+//uniform mat4 projection;
+//out vec2 v_texcoord;
+//
+//void main()
+//{
+//    gl_Position = projection * (view * vec4(aPos, 1.0));
+//    v_texcoord = aTexCoord;
+//}

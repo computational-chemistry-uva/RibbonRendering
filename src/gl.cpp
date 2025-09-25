@@ -21,7 +21,7 @@ void Camera::update(MouseState mouse) {
         dist = (1.0f + 0.005f * mouse.dy) * dist;
     }
     dist = (1.0f - 0.25f * mouse.dscroll) * dist;
-    dist = glm::clamp(dist, 1.0f, 50.0f);
+    dist = glm::clamp(dist, 1.0f, 500.0f);
 }
 
 void Uniforms::updateMatrices(GLFWwindow *window, Camera &camera) {
@@ -32,7 +32,7 @@ void Uniforms::updateMatrices(GLFWwindow *window, Camera &camera) {
         glm::radians(camera.fov),   // Field of view
         float(w) / float(h),        // Aspect ratio
         0.1f,                       // Near plane
-        100.0f                      // Far plane
+        1000.0f                      // Far plane
     );
     // Create view matrix
     view = glm::mat4(1.0f);
@@ -129,6 +129,8 @@ DrawObject createMesh(std::vector<float> &vertices, std::vector<unsigned int> &i
         vao,
         vbo,
         ibo,
+        std::vector<float>(vertices),
+        std::vector<unsigned int>(indices),
         unsigned(vertices.size() / 8),
         unsigned(indices.size()),
     };
@@ -157,17 +159,17 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
         //std::cout << "normal " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
         //if (i > 0) std::cout << glm::dot(normal, normals.back()) << std::endl;
         if (i > 0 && glm::dot(normal, normals.back()) < 0.0) {
-            normal *= -1.0f;
-            std::cout << "normal flipped" << std::endl;
+            //normal *= -1.0f; // TODO
+            //std::cout << "normal flipped" << std::endl;
         }
         normals.push_back(normal);
         glm::vec3 binormal = glm::normalize(glm::cross(tangent, normal));
         //std::cout << "binormal " << binormal.x << ", " << binormal.y << ", " << binormal.z << std::endl;
         //if (i > 0) std::cout << glm::dot(binormal, binormals.back()) << std::endl;
-        if (i > 0 && glm::dot(binormal, binormals.back()) < 0.0) {
-            binormal *= -1.0f;
-            std::cout << "binormal flipped" << std::endl;
-        }
+        //if (i > 0 && glm::dot(binormal, binormals.back()) < 0.0) {
+        //    binormal *= -1.0f; // TODO
+        //    std::cout << "binormal flipped" << std::endl;
+        //}
         //std::cout << std::endl;
         binormals.push_back(binormal);
     }
@@ -258,10 +260,10 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
         for (int j = 0; j <= loopResolution; j++) {
             int vertexIndex = (i * (loopResolution + 1) + j) * 8;
             // Texture coordinates
-            float u = distAroundRing[j] / totalDist;
-            float v = float(i) / float(splineSamples - 1);
-            vertices[vertexIndex + 6] = u;
-            vertices[vertexIndex + 7] = v;
+            float u = float(i) / float(splineSamples - 1);
+            float v = distAroundRing[j] / totalDist;
+            vertices[vertexIndex + 6] = 0.99f * u + 0.005f;
+            vertices[vertexIndex + 7] = 0.99f * v + 0.005f;
         }
     }
     // Calculate averaged normals for each vertex
@@ -350,6 +352,8 @@ DrawObject createSpheres(std::vector<glm::vec3> &points) {
         vao,
         vbo,
         0,
+        vertices,
+        std::vector<unsigned int>(),
         unsigned(vertices.size() / 3),
         0,
     };
@@ -431,6 +435,8 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
         vao,
         vbo,
         0,
+        vertices,
+        std::vector<unsigned int>(),
         unsigned(vertices.size() / 12),
         0,
     };
@@ -452,8 +458,12 @@ void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms) {
     glUniform3f(uniformLoc, uniforms.lightPos.x, uniforms.lightPos.y, uniforms.lightPos.z);
     uniformLoc = glGetUniformLocation(shaderProgram, "drawNormals");
     glUniform1i(uniformLoc, uniforms.drawNormals);
+    uniformLoc = glGetUniformLocation(shaderProgram, "drawTexture");
+    glUniform1i(uniformLoc, uniforms.drawTexture);
     uniformLoc = glGetUniformLocation(shaderProgram, "lightIntensity");
     glUniform1f(uniformLoc, uniforms.lightIntensity);
+    uniformLoc = glGetUniformLocation(shaderProgram, "ambientLightIntensity");
+    glUniform1f(uniformLoc, uniforms.ambientLightIntensity);
     uniformLoc = glGetUniformLocation(shaderProgram, "sphereRadius");
     glUniform1f(uniformLoc, uniforms.sphereRadius);
     uniformLoc = glGetUniformLocation(shaderProgram, "raytraced");
@@ -471,7 +481,6 @@ void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms) {
     glBindVertexArray(object.vao);
     glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
     if (object.nIndices > 0) {
-        glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
         glDrawElements(GL_TRIANGLES, object.nIndices, GL_UNSIGNED_INT, 0);
     }
     else {

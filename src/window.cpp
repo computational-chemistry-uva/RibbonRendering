@@ -67,6 +67,22 @@ GLFWwindow* initWindow() {
     // Enable MSAA (works with impostor shaders out of the box!)
     //glfwWindowHint(GLFW_SAMPLES, 16);
 
+    glfwWindowHint(GLFW_RED_BITS, 8);
+    glfwWindowHint(GLFW_GREEN_BITS, 8);
+    glfwWindowHint(GLFW_BLUE_BITS, 8);
+    glfwWindowHint(GLFW_ALPHA_BITS, 8);
+    glfwWindowHint(GLFW_DEPTH_BITS, 32);
+    glfwWindowHint(GLFW_STENCIL_BITS, GLFW_DONT_CARE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
+
+    // TODO Fixed size until viewport is dynamic
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+
     // Create window
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Viewer", NULL, NULL);
     if (!window) {

@@ -4,7 +4,7 @@
         {
             "type": "shell",
             "label": "cmake-build-debug",
-            "command": "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug .. && cmake --build .",
+            "command": "mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_FLAGS_DEBUG='-g -O0' .. && cmake --build .",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
