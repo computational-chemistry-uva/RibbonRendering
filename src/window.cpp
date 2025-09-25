@@ -31,10 +31,16 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         mouse->leftButtonDown = false;
     }
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+        mouse->rightButtonDown = false;
+    }
     // Only register click when not over UI
     if (ImGui::GetIO().WantCaptureMouse) return;
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         mouse->leftButtonDown = true;
+    }
+    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+        mouse->rightButtonDown = true;
     }
 }
 void mouseScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {

@@ -12,6 +12,7 @@ struct MouseState {
     float dy = 0.0f;
     float dscroll = 0.0f;
     bool leftButtonDown = false;
+    bool rightButtonDown = false;
 
     // Update mouse position and change since last frame
     void update(GLFWwindow *window) {

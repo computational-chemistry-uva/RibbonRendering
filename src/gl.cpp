@@ -17,6 +17,9 @@ void Camera::update(MouseState mouse) {
         pitch = glm::clamp(pitch, -90.0f, 90.0f);
         yaw = fmod(yaw + 360.0f, 360.0f);
     }
+    else if (mouse.rightButtonDown) {
+        dist = (1.0f + 0.005f * mouse.dy) * dist;
+    }
     dist = (1.0f - 0.25f * mouse.dscroll) * dist;
     dist = glm::clamp(dist, 1.0f, 50.0f);
 }
