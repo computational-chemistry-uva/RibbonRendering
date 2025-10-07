@@ -254,16 +254,17 @@ int main() {
     BSpline spline(controlPoints, orientationVectors, 3);
 
     // Create Objects
-    // TODO Resolution gets lower further along the spline??
+    // TODO Resolution gets divided up wrong further along the spline
     // TODO When spline binormals flip, mesh ends up with flipped normals
     // TODO Points where normals flip need to be the same across LODs
     float length = spline.arcLength(1.0f);
     //unsigned int nSegments = 5 * controlPoints.size();
     //std::cout << length << " " << nSegments << std::endl;
     unsigned int nSegments = (unsigned int)(length);
-    DrawObject lod0 = createTubeMesh(spline, nSegments * 2, 12, 1.0f);
-    DrawObject lod1 = createTubeMesh(spline, nSegments, 6, 1.0f);
-    DrawObject lod2 = createTubeMesh(spline, nSegments / 2, 4, 1.0f);
+    // NOTE Because vertices are reused, wireframe indices are only correct when loopResolution is 4 / 10 / 16
+    DrawObject lod0 = createTubeMesh(spline, nSegments * 4, 16, 1.0f);
+    DrawObject lod1 = createTubeMesh(spline, nSegments * 2, 10, 1.0f);
+    DrawObject lod2 = createTubeMesh(spline, nSegments * 1, 4, 1.0f);
     DrawObject spheres = createSpheres(controlPoints);
     auto curvePoints = spline.generateCurve(nSegments);
     DrawObject cylinders = createCylinders(curvePoints);
@@ -431,14 +432,17 @@ int main() {
         // Draw objects
         glShadeModel(GL_SMOOTH);
         glEnable(GL_CULL_FACE);
+        glEnable(GL_POLYGON_OFFSET_FILL);
         glDepthRange(0.0, 1.0);
+        glPolygonOffset(0.0, 0.0);
         if (settings.drawMesh) draw(*mesh, shaders.meshProgram, settings.uniforms);
         if (settings.drawSpheres) draw(spheres, shaders.sphereProgram, settings.uniforms);
         if (settings.drawCylinders) draw(cylinders, shaders.cylinderProgram, settings.uniforms);
         if (settings.drawWireframes) {
             // Draw wireframes with no backface culling and on top of everything else
-            glDisable(GL_CULL_FACE);
-            glDepthRange(0.0, 0.0);
+            //glDisable(GL_CULL_FACE);
+            //glDepthRange(0.0, 0.0);
+            glPolygonOffset(-1.0, 0.0);
             if (settings.drawMesh) draw(*mesh, shaders.meshWireframeProgram, settings.uniforms);
             if (settings.drawSpheres) draw(spheres, shaders.sphereWireframeProgram, settings.uniforms);
             if (settings.drawCylinders) draw(cylinders, shaders.cylinderWireframeProgram, settings.uniforms);

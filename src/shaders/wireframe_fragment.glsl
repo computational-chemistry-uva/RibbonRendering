@@ -12,12 +12,12 @@ void main() {
     vec3 screenSpaceWidths = fwidth(edgeDistances);
     edgeDistances /= screenSpaceWidths;
 
-    //float minDistance = min(min(edgeDistances.x, edgeDistances.y), edgeDistances.z);
-    float minDistance = min(edgeDistances.x, edgeDistances.y);
-    if (minDistance < 1.0) {
+    float minDistance = min(min(edgeDistances.x, edgeDistances.y), edgeDistances.z);
+    //float minDistance = min(edgeDistances.x, edgeDistances.y);
+    if (minDistance < 0.5) {
         FragColor = vec4(fCol, 1.0);
-    } else if (edgeDistances.z < 0.5) {
-        FragColor = vec4(fCol, 0.5);
+    //} else if (edgeDistances.z < 0.5) {
+    //    FragColor = vec4(fCol, 0.5);
     } else {
         discard;
     }
