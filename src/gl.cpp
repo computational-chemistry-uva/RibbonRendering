@@ -187,28 +187,29 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
         for (int j = 0; j < loopResolution; j++) {
             // TODO Formula for arbitrary width sheet with evenly rounded corners
 
-            //float angle = 2.0f * M_PI * float(j) / float(loopResolution);
-            //float d = glm::sin(angle);
-            //float n = glm::cos(angle);
+            float angle = 2.0f * M_PI * float(j) / float(loopResolution);
+            float d = glm::sin(angle);
+            float n = glm::cos(angle);
 
-            //d = std::clamp(d, -0.125f, 0.125f);
+            d = std::clamp(d, -0.125f, 0.125f); // TODO Capped circular
             //n = std::clamp(n, -0.125f, 0.125f);
-            //d /= 5.0f;
+            //d /= 5.0f; // TODO Oval
             //n /= 5.0f;
             //if (n > 0.0f) n += 0.5f;
             //else if (n < 0.0f) n -= 0.5f;
             //float d = (j % (loopResolution / 2) == 0) ? 0.0f : 1.0f;
             //float d = 1.0f;
 
-            int a = j % (loopResolution / 2);
-            float d = (a == 0) ? 0.0f : 0.125f;
-            float n = -((a / (loopResolution / 2.0f - 1.0f)) * 2.0f - 1.0f);
-            if (j < loopResolution / 2) {
-            }
-            else {
-                d *= -1.0f;
-                n *= -1.0f;
-            }
+            // TODO Rectangular with dull edge, even spacing
+            //int a = j % (loopResolution / 2);
+            //float d = (a == 0) ? 0.0f : 0.125f;
+            //float n = -((a / (loopResolution / 2.0f - 1.0f)) * 2.0f - 1.0f);
+            //if (j < loopResolution / 2) {
+            //}
+            //else {
+            //    d *= -1.0f;
+            //    n *= -1.0f;
+            //}
 
             // Arrows
             //t = fmod(t, 0.1f);
