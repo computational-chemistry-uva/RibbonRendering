@@ -262,8 +262,8 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
             // Texture coordinates
             float u = float(i) / float(splineSamples - 1);
             float v = distAroundRing[j] / totalDist;
-            vertices[vertexIndex + 6] = 0.99f * u + 0.005f;
-            vertices[vertexIndex + 7] = 0.99f * v + 0.005f;
+            vertices[vertexIndex + 6] = 0.999f * u + 0.0005f;
+            vertices[vertexIndex + 7] = 0.999f * v + 0.0005f;
         }
     }
     // Calculate averaged normals for each vertex
@@ -273,9 +273,11 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
         for (int j = 0; j < loopResolution; j++) {
             // Vertex indices for the quad
             unsigned int v0 = i * (loopResolution + 1) + j;
-            unsigned int v1 = i * (loopResolution + 1) + (j + 1);
+            unsigned int v1 = i * (loopResolution + 1) + j + 1;
+            unsigned int v1Base = i * (loopResolution + 1) + (j + 1) % loopResolution;
             unsigned int v2 = (i + 1) * (loopResolution + 1) + j;
-            unsigned int v3 = (i + 1) * (loopResolution + 1) + (j + 1);
+            unsigned int v3 = (i + 1) * (loopResolution + 1) + j + 1;
+            unsigned int v3Base = (i + 1) * (loopResolution + 1) + (j + 1) % loopResolution;
 
             // Get vertex positions
             glm::vec3 pos0 = rings[i][j];
@@ -289,10 +291,10 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
 
             // Accumulate normal for each vertex of first triangle
             vertexNormals[v0] += normal1;
-            vertexNormals[v1] += normal1;
+            vertexNormals[v1Base] += normal1;
             vertexNormals[v2] += normal1;
             normalCounts[v0]++;
-            normalCounts[v1]++;
+            normalCounts[v1Base]++;
             normalCounts[v2]++;
 
             // Second triangle (v1, v3, v2)
@@ -300,18 +302,20 @@ DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loo
             indices.insert(indices.end(), {v1, v3, v2});
 
             // Accumulate normal for each vertex of second triangle
-            vertexNormals[v1] += normal2;
-            vertexNormals[v3] += normal2;
+            vertexNormals[v1Base] += normal2;
+            vertexNormals[v3Base] += normal2;
             vertexNormals[v2] += normal2;
-            normalCounts[v1]++;
-            normalCounts[v3]++;
+            normalCounts[v1Base]++;
+            normalCounts[v3Base]++;
             normalCounts[v2]++;
         }
     }
     // Average the normals and store them in the vertices array
     for (int i = 0; i < totalVertices; i++) {
-        if (normalCounts[i] > 0) {
-            glm::vec3 avgNormal = glm::normalize(vertexNormals[i] / float(normalCounts[i]));
+        int baseI = i;
+        if (i % (loopResolution + 1) == loopResolution) baseI -= loopResolution;
+        if (normalCounts[baseI] > 0) {
+            glm::vec3 avgNormal = glm::normalize(vertexNormals[baseI] / float(normalCounts[baseI]));
             int normalIndex = i * 8 + 3;
             vertices[normalIndex] = avgNormal.x;
             vertices[normalIndex + 1] = avgNormal.y;
