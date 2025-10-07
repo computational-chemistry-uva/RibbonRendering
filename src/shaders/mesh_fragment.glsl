@@ -38,7 +38,7 @@ void main() {
             pattern = vec4(texture(lightmap, fTexCoord)).rgb;
         }
         else {
-            pattern = vec3(1.0);
+            pattern = vec3(0.75);
         }
         //pattern = pattern * 0.9 + 0.1;
         //pattern = vec3(1.0);
@@ -46,7 +46,8 @@ void main() {
         vec3 albedo = fCol;
         vec3 ambient = ambientLightIntensity * pattern;
         float diffuse = max(d, 0.0);
-        float specular = pow(max(dot(viewDir, reflectDir), 0.0), 64);
+        //float specular = pow(max(dot(viewDir, reflectDir), 0.0), 64);
+        float specular = 0.0f;
         float alpha = (gl_FrontFacing ? 1.0 : 0.0);
         FragColor = vec4(albedo * (ambient + (diffuse + specular) * lightIntensity), alpha);
     }

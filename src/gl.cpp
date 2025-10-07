@@ -43,7 +43,7 @@ void Uniforms::updateMatrices(GLFWwindow *window, Camera &camera) {
     model = glm::mat4(1.0f);
 
     // Precompute light position in view space
-    lightPos = view * glm::vec4(1.0f, 1.5f, 4.5f, 1.0f);
+    lightPos = view * glm::vec4(2.0f, 3.0f, 9.0f, 1.0f);
 }
 
 // Helper function to read shader from file

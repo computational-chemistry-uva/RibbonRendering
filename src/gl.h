@@ -40,9 +40,9 @@ struct Uniforms {
     glm::vec3 lightPos;
     bool drawNormals = false;
     bool drawTexture = true;
-    //float lightIntensity = 0.75f;
+    //float lightIntensity = 0.65f;
     float lightIntensity = 0.0f;
-    //float ambientLightIntensity = 0.25f;
+    //float ambientLightIntensity = 0.35f;
     float ambientLightIntensity = 1.0f;
     float sphereRadius = 0.25f;
     bool raytraced = true;
