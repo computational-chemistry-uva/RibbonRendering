@@ -80,9 +80,6 @@ GLFWwindow* initWindow() {
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
-    // TODO Fixed size until viewport is dynamic
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
     // Create window
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Viewer", NULL, NULL);
     if (!window) {
@@ -115,7 +112,7 @@ GLFWwindow* initWindow() {
     glfwSetKeyCallback(window, keyCallback);
     glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetScrollCallback(window, mouseScrollCallback);
-    windowResizeCallback(window, 1280, 720);
+    //windowResizeCallback(window, 1280, 720);
 
     return window;
 }

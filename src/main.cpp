@@ -410,7 +410,9 @@ int main() {
         // Clear screen
         glClearColor(0.125f, 0.125f, 0.125f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glViewport(0, 0, 1280, 720); // TODO Un-hardcode
+        int w, h;
+        glfwGetWindowSize(window, &w, &h);
+        glViewport(0, 0, w, h);
 
         // Select level of detail
         DrawObject *mesh;
