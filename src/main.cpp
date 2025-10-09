@@ -253,6 +253,8 @@ int main() {
 
     BSpline spline(controlPoints, orientationVectors, 3);
 
+    std::cout << "Building meshes..." << std::endl;
+
     // Create Objects
     // TODO Resolution gets divided up wrong further along the spline
     // TODO When spline binormals flip, mesh ends up with flipped normals
@@ -263,19 +265,18 @@ int main() {
     unsigned int nSegments = (unsigned int)(length);
     // NOTE Because vertices are reused, wireframe indices are only correct when loopResolution is 4 / 10 / 16
     DrawObject lod0 = createTubeMesh(spline, nSegments * 4, 16, 1.0f);
+    std::cout << "LOD 0: " << lod0.nVertices << " vertices" << std::endl;
     DrawObject lod1 = createTubeMesh(spline, nSegments * 2, 10, 1.0f);
+    std::cout << "LOD 1: " << lod1.nVertices << " vertices" << std::endl;
     DrawObject lod2 = createTubeMesh(spline, nSegments * 1, 4, 1.0f);
+    std::cout << "LOD 2: " << lod2.nVertices << " vertices" << std::endl;
     DrawObject spheres = createSpheres(controlPoints);
     auto curvePoints = spline.generateCurve(nSegments);
     DrawObject cylinders = createCylinders(curvePoints);
 
-    std::cout << "LOD 0: " << lod0.nVertices << " vertices" << std::endl;
-    std::cout << "LOD 1: " << lod1.nVertices << " vertices" << std::endl;
-    std::cout << "LOD 2: " << lod2.nVertices << " vertices" << std::endl;
-
-
-
     DrawObject &mesh = lod0;
+
+    std::cout << "Baking lightmap..." << std::endl;
 
     // TODO Runtime controls for re-baking
     // TODO Credit lightmapper in README (check license)
