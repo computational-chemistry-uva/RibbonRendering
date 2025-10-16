@@ -87,7 +87,7 @@ struct Shaders {
 
 // Helper functions to create DrawObjects from a set of input points
 DrawObject createMesh(std::vector<float> &vertices, std::vector<unsigned int> &indices);
-DrawObject createTubeMesh(const BSpline& spline, int samples, int segments, float radius);
+DrawObject createTubeMesh(BSpline& spline, int samples, int segments, float radius);
 DrawObject createSpheres(std::vector<glm::vec3> &points);
 DrawObject createCylinders(std::vector<glm::vec3> &points);
 

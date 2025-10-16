@@ -274,7 +274,7 @@ int main() {
     auto curvePoints = spline.generateCurve(nSegments);
     DrawObject cylinders = createCylinders(curvePoints);
 
-    DrawObject &mesh = lod0;
+    DrawObject &mesh = lod1; // Tradeoff between quality and generation speed
 
     std::cout << "Baking lightmap..." << std::endl;
 

@@ -18,6 +18,7 @@ private:
     std::vector<glm::vec3> orientationVectors;
     std::vector<float> knotVector;
     int degree;
+    std::vector<float> cachedArcLengths; // Cached arc length for each point
 
     // Calculate the basis function N_i,p(u)
     float basisFunction(int i, int p, float u, const std::vector<float>& knots) const {
@@ -38,6 +39,28 @@ private:
         }
 
         return left + right;
+    }
+
+    void cacheArcLengths() {
+        const int CACHE_RESOLUTION = 1; // Per segment
+        int samples = CACHE_RESOLUTION * controlPoints.size();
+
+        if (cachedArcLengths.size() == samples + 1) return;
+
+        cachedArcLengths.clear();
+        cachedArcLengths.reserve(samples + 1);
+
+        cachedArcLengths.push_back(0.0f);
+        float dt = 1.0f / float(samples);
+
+        for (int i = 0; i < samples; ++i) {
+            float t1 = float(i) * dt;
+            float t2 = float(i + 1) * dt;
+            glm::vec3 p1 = evaluate(t1);
+            glm::vec3 p2 = evaluate(t2);
+            float segmentLength = glm::length(p2 - p1);
+            cachedArcLengths.push_back(cachedArcLengths.back() + segmentLength);
+        }
     }
 
 public:
@@ -68,43 +91,45 @@ public:
     }
 
     // Compute approximate arc length from 0 to t
-    float arcLength(float t, int samples = 100) const {
+    float arcLength(float t) {
         if (t <= 0) return 0.0f;
 
-        float length = 0.0f;
-        float dt = t / float(samples);
+        cacheArcLengths();
 
-        for (int i = 0; i < samples; ++i) {
-            float t1 = float(i) * dt;
-            float t2 = float(i + 1) * dt;
-            glm::vec3 p1 = evaluate(t1);
-            glm::vec3 p2 = evaluate(t2);
-            length += glm::length(p2 - p1);
-        }
+        if (t >= 1.0f) return cachedArcLengths.back();
 
-        return length;
+        // Find the segment containing t
+        float index = t * float(cachedArcLengths.size() - 1);
+        int i0 = int(index);
+        int i1 = std::min(i0 + 1, int(cachedArcLengths.size() - 1));
+        float frac = index - float(i0);
+
+        // Linear interpolation between cached values
+        return cachedArcLengths[i0] * (1.0f - frac) + cachedArcLengths[i1] * frac;
     }
 
     // Find parameter t that gives desired arc length
-    float parameterFromArcLength(float targetLength, float totalLength) const {
+    float parameterFromArcLength(float targetLength, float totalLength) {
+        cacheArcLengths();
+
         if (targetLength <= 0) return 0.0f;
-        if (targetLength >= totalLength) return 1.0f;
+        if (targetLength >= cachedArcLengths.back()) return 1.0f;
 
-        // Binary search for the parameter
-        float low = 0.0f, high = 1.0f;
+        // Binary search in the cached arc lengths
+        auto it = std::lower_bound(cachedArcLengths.begin(), cachedArcLengths.end(), targetLength);
+        int index = std::distance(cachedArcLengths.begin(), it);
 
-        for (int iter = 0; iter < 20; ++iter) {
-            float mid = (low + high) * 0.5f;
-            float currentLength = arcLength(mid);
+        if (index == 0) return 0.0f;
 
-            if (currentLength < targetLength) {
-                low = mid;
-            } else {
-                high = mid;
-            }
-        }
+        // Linear interpolation between the two nearest cached values
+        float lengthBefore = cachedArcLengths[index - 1];
+        float lengthAfter = cachedArcLengths[index];
+        float frac = (targetLength - lengthBefore) / (lengthAfter - lengthBefore);
 
-        return (low + high) * 0.5f;
+        float tBefore = float(index - 1) / float(cachedArcLengths.size() - 1);
+        float tAfter = float(index) / float(cachedArcLengths.size() - 1);
+
+        return tBefore + frac * (tAfter - tBefore);
     }
 
     glm::vec3 evaluate(float t) const {

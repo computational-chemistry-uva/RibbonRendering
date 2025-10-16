@@ -136,7 +136,7 @@ DrawObject createMesh(std::vector<float> &vertices, std::vector<unsigned int> &i
     };
 }
 
-DrawObject createTubeMesh(const BSpline& spline, int splineSamples = 50, int loopResolution = 8, float radius = 1.0f) {
+DrawObject createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResolution = 8, float radius = 1.0f) {
     // Generate points along the spline
     std::vector<glm::vec3> splinePoints;
     std::vector<glm::vec3> tangents;
