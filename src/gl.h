@@ -40,6 +40,7 @@ struct Uniforms {
     glm::vec3 lightPos;
     bool drawNormals = false;
     bool drawTexture = true;
+    bool checkerboard = false;
     //float lightIntensity = 0.65f;
     float lightIntensity = 0.0f;
     //float ambientLightIntensity = 0.35f;

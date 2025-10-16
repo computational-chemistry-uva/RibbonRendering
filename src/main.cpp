@@ -69,6 +69,7 @@ void settingsUI(Settings &settings) {
         {
             // TODO Draw texture checkbox should draw ONLY texture, fully, lit, like draw normals
             ImGui::Checkbox("Draw texture", &settings.uniforms.drawTexture);
+            ImGui::Checkbox("Checkerboard", &settings.uniforms.checkerboard);
             ImGui::SetNextItemWidth(128);
             ImGui::SliderFloat("Light", &settings.uniforms.lightIntensity, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
             ImGui::SetNextItemWidth(128);
@@ -281,6 +282,8 @@ int main() {
     // TODO Runtime controls for re-baking
     // TODO Credit lightmapper in README (check license)
     // TODO Add license
+    // TODO Compute texture size dynamically
+    // TODO Pack into square texture
     // create lightmap texture
     const int lightmap_w = 2048;
     const int lightmap_h = 32;

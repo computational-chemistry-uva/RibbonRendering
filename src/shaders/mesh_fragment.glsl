@@ -13,6 +13,7 @@ uniform float lightIntensity;
 uniform float ambientLightIntensity;
 uniform int drawNormals;
 uniform int drawTexture;
+uniform int checkerboard;
 uniform sampler2D lightmap;
 
 void main() {
@@ -44,6 +45,10 @@ void main() {
         //pattern = vec3(1.0);
         // TODO AO intensity
         vec3 albedo = fCol;
+        if (checkerboard != 0) {
+            ivec2 checker = ivec2(fTexCoord * textureSize(lightmap, 0));
+            albedo *= (checker.x % 2) ^ (checker.y % 2);
+        }
         vec3 ambient = ambientLightIntensity * pattern;
         float diffuse = max(d, 0.0);
         //float specular = pow(max(dot(viewDir, reflectDir), 0.0), 64);

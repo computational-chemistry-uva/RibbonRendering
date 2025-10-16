@@ -465,6 +465,8 @@ void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms) {
     glUniform1i(uniformLoc, uniforms.drawNormals);
     uniformLoc = glGetUniformLocation(shaderProgram, "drawTexture");
     glUniform1i(uniformLoc, uniforms.drawTexture);
+    uniformLoc = glGetUniformLocation(shaderProgram, "checkerboard");
+    glUniform1i(uniformLoc, uniforms.checkerboard);
     uniformLoc = glGetUniformLocation(shaderProgram, "lightIntensity");
     glUniform1f(uniformLoc, uniforms.lightIntensity);
     uniformLoc = glGetUniformLocation(shaderProgram, "ambientLightIntensity");
