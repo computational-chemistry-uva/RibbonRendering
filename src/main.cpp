@@ -266,11 +266,11 @@ int main() {
     unsigned int nSegments = (unsigned int)(length);
     // NOTE Because vertices are reused, wireframe indices are only correct when loopResolution is 4 / 10 / 16
     DrawObject lod0 = createTubeMesh(spline, nSegments * 4, 16, 1.0f);
-    std::cout << "LOD 0: " << lod0.nVertices << " vertices" << std::endl;
+    std::cout << "LOD 0: " << lod0.vertices.size() << " vertices" << std::endl;
     DrawObject lod1 = createTubeMesh(spline, nSegments * 2, 10, 1.0f);
-    std::cout << "LOD 1: " << lod1.nVertices << " vertices" << std::endl;
+    std::cout << "LOD 1: " << lod1.vertices.size() << " vertices" << std::endl;
     DrawObject lod2 = createTubeMesh(spline, nSegments * 1, 4, 1.0f);
-    std::cout << "LOD 2: " << lod2.nVertices << " vertices" << std::endl;
+    std::cout << "LOD 2: " << lod2.vertices.size() << " vertices" << std::endl;
     DrawObject spheres = createSpheres(controlPoints);
     auto curvePoints = spline.generateCurve(nSegments);
     DrawObject cylinders = createCylinders(curvePoints);
@@ -320,9 +320,9 @@ int main() {
             lmSetTargetLightmap(ctx, data, w, h, 4);
 
             lmSetGeometry(ctx, NULL,
-                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + 0 * sizeof(float), 8 * sizeof(float),
-                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + 3 * sizeof(float), 8 * sizeof(float),
-                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + 6 * sizeof(float), 8 * sizeof(float),
+                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + offsetof(Vertex, position), sizeof(Vertex),
+                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + offsetof(Vertex, normal), sizeof(Vertex),
+                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + offsetof(Vertex, texCoord), sizeof(Vertex),
                     mesh.indices.size(), LM_UNSIGNED_INT, mesh.indices.data());
 
             glDisable(GL_CULL_FACE);
@@ -367,7 +367,7 @@ int main() {
                 i++;
                 lmEnd(ctx);
             }
-            printf("\rFinished baking %d triangles (%d iterations).\n", mesh.nIndices / 3, i);
+            printf("\rFinished baking %d triangles (%d iterations).\n", int(mesh.indices.size()) / 3, i);
 
             // postprocess texture
             //float *temp = static_cast<float *>(calloc(w * h * 4, sizeof(float)));

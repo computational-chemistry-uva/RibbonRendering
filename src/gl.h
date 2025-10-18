@@ -8,16 +8,20 @@
 
 // NOTE This currently does not handle deletion of GL resources, they are kept alive until termination of the program.
 
+struct Vertex {
+    glm::vec3 position;
+    glm::vec3 normal;
+    glm::vec2 texCoord;
+};
+
 // Simple struct to help with drawing
+// TODO Maybe actually use inheritance to differentiate types of objects
 struct DrawObject {
     GLuint vao;
     GLuint vbo;
     GLuint ibo;
-    std::vector<float> vertices; // TODO Vertex struct
+    std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
-    // TODO Get rid of these
-    unsigned int nVertices;
-    unsigned int nIndices; // 0 to use non-indexed drawing
 };
 
 struct Camera {

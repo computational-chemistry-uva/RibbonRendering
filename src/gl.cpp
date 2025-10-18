@@ -101,7 +101,7 @@ GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
     return shaderProgram;
 }
 
-DrawObject createMesh(std::vector<float> &vertices, std::vector<unsigned int> &indices) {
+DrawObject createMesh(std::vector<Vertex> &vertices, std::vector<unsigned int> &indices) {
     // Create buffers
     GLuint vao, vbo, ibo;
     glGenVertexArrays(1, &vao);
@@ -111,28 +111,27 @@ DrawObject createMesh(std::vector<float> &vertices, std::vector<unsigned int> &i
     glBindVertexArray(vao);
     // Bind and fill VBO
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
     // Bind and fill IBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
+    // TODO Note that vertex attributes should be changed here, or make it a function of Vertex
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
     glEnableVertexAttribArray(0);
     // Normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
     glEnableVertexAttribArray(1);
     // Texture coordinate attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
     glEnableVertexAttribArray(2);
 
     return DrawObject {
         vao,
         vbo,
         ibo,
-        std::vector<float>(vertices),
+        std::vector<Vertex>(vertices),
         std::vector<unsigned int>(indices),
-        unsigned(vertices.size() / 8),
-        unsigned(indices.size()),
     };
 }
 
@@ -231,40 +230,37 @@ DrawObject createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResol
 
     // Generate triangles between consecutive rings
     unsigned int totalVertices = splineSamples * (loopResolution + 1);
-    std::vector<float> vertices(totalVertices * 8);
+    std::vector<Vertex> vertices(totalVertices);
     std::vector<unsigned int> indices;
     std::vector<float> distAroundRing(loopResolution + 1);
     // Fill positions and texture coordinates
     for (int i = 0; i < splineSamples; i++) {
         // First vertex
-        int vertexIndex = (i * (loopResolution + 1)) * 8;
+        int vertexIndex = (i * (loopResolution + 1));
         int ringIndex = 0;
         glm::vec3 pos = rings[i][ringIndex];
-        vertices[vertexIndex] = pos.x;
-        vertices[vertexIndex + 1] = pos.y;
-        vertices[vertexIndex + 2] = pos.z;
+        vertices[vertexIndex].position = pos;
         glm::vec3 prevPos = pos;
         distAroundRing[0] = 0.0f;
         for (int j = 1; j <= loopResolution; j++) {
-            int vertexIndex = (i * (loopResolution + 1) + j) * 8;
+            int vertexIndex = (i * (loopResolution + 1) + j);
             int ringIndex = j % loopResolution;
             // Position
             glm::vec3 pos = rings[i][ringIndex];
-            vertices[vertexIndex] = pos.x;
-            vertices[vertexIndex + 1] = pos.y;
-            vertices[vertexIndex + 2] = pos.z;
+            vertices[vertexIndex].position = pos;
             // Normal will be filled later at indices 3, 4, 5
             distAroundRing[j] = distAroundRing[j - 1] + glm::distance(prevPos, pos);
             prevPos = pos;
         }
         float totalDist = distAroundRing[loopResolution];
         for (int j = 0; j <= loopResolution; j++) {
-            int vertexIndex = (i * (loopResolution + 1) + j) * 8;
+            int vertexIndex = (i * (loopResolution + 1) + j);
             // Texture coordinates
             float u = float(i) / float(splineSamples - 1);
             float v = distAroundRing[j] / totalDist;
-            vertices[vertexIndex + 6] = 0.999f * u + 0.0005f;
-            vertices[vertexIndex + 7] = 0.999f * v + 0.0005f;
+            u = 0.999f * u + 0.0005f;
+            v = 0.999f * v + 0.0005f;
+            vertices[vertexIndex].texCoord = glm::vec2(u, v);
         }
     }
     // Calculate averaged normals for each vertex
@@ -317,10 +313,7 @@ DrawObject createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResol
         if (i % (loopResolution + 1) == loopResolution) baseI -= loopResolution;
         if (normalCounts[baseI] > 0) {
             glm::vec3 avgNormal = glm::normalize(vertexNormals[baseI] / float(normalCounts[baseI]));
-            int normalIndex = i * 8 + 3;
-            vertices[normalIndex] = avgNormal.x;
-            vertices[normalIndex + 1] = avgNormal.y;
-            vertices[normalIndex + 2] = avgNormal.z;
+            vertices[i].normal = avgNormal;
         }
     }
 
@@ -331,12 +324,10 @@ DrawObject createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResol
 //      Can't reuse the same vertex with indexed drawing because of the way gl_VertexID works.
 DrawObject createSpheres(std::vector<glm::vec3> &points) {
     // Create vertex data
-    std::vector<float> vertices;
+    std::vector<glm::vec3> vertices;
     for (int i = 0; i < points.size(); i++) {
         for (int j = 0; j < 6; j++) {
-            vertices.push_back(points[i].x);
-            vertices.push_back(points[i].y);
-            vertices.push_back(points[i].z);
+            vertices.push_back(points[i]);
         }
     }
 
@@ -348,19 +339,17 @@ DrawObject createSpheres(std::vector<glm::vec3> &points) {
     glBindVertexArray(vao);
     // Bind and fill VBO
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(glm::vec3), vertices.data(), GL_STATIC_DRAW);
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
     glEnableVertexAttribArray(0);
 
     return DrawObject {
         vao,
         vbo,
         0,
-        vertices,
+        std::vector<Vertex>(),
         std::vector<unsigned int>(),
-        unsigned(vertices.size() / 3),
-        0,
     };
 };
 
@@ -369,8 +358,16 @@ DrawObject createSpheres(std::vector<glm::vec3> &points) {
 //      For example, helices do not form splines so they don't need cut planes.
 //      Then they also only need one cap quad because the other always faces away from the camera.
 DrawObject createCylinders(std::vector<glm::vec3> &points) {
+    struct CylinderVertex {
+        glm::vec3 aPos;
+        glm::vec3 bPos;
+        glm::vec3 aCPN;
+        glm::vec3 bCPN;
+        glm::vec3 startDir;
+    };
+
     // Create vertex data
-    std::vector<float> vertices;
+    std::vector<CylinderVertex> vertices;
     for (int i = 0; i < points.size() - 1; i++) {
         glm::vec3 a = points[i];
         glm::vec3 b = points[i + 1];
@@ -392,22 +389,9 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
         //      It should be perpendicular to the cylinder axis!
         //      Currently this will produce artifacts if a cylinder is pointing in the x direction
         glm::vec3 startDir(1.0f, 0.0f, 0.0f);
+        CylinderVertex v { a, b, aCPN, bCPN, startDir };
         for (int j = 0; j < 18; j++) {
-            vertices.push_back(a.x);
-            vertices.push_back(a.y);
-            vertices.push_back(a.z);
-            vertices.push_back(b.x);
-            vertices.push_back(b.y);
-            vertices.push_back(b.z);
-            vertices.push_back(aCPN.x);
-            vertices.push_back(aCPN.y);
-            vertices.push_back(aCPN.z);
-            vertices.push_back(bCPN.x);
-            vertices.push_back(bCPN.y);
-            vertices.push_back(bCPN.z);
-            vertices.push_back(startDir.x);
-            vertices.push_back(startDir.y);
-            vertices.push_back(startDir.z);
+            vertices.push_back(v);
         }
     }
 
@@ -419,31 +403,29 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
     glBindVertexArray(vao);
     // Bind and fill VBO
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(CylinderVertex), vertices.data(), GL_STATIC_DRAW);
     // A position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)offsetof(CylinderVertex, aPos));
     glEnableVertexAttribArray(0);
     // B position plane normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)(3 * sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, bPos)));
     glEnableVertexAttribArray(1);
     // A cut plane normal attribute
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)(6 * sizeof(float)));
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, aCPN)));
     glEnableVertexAttribArray(2);
     // B cut plane normal attribute
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)(9 * sizeof(float)));
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, bCPN)));
     glEnableVertexAttribArray(3);
     // Start dir attribute
-    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, 15 * sizeof(float), (void*)(12 * sizeof(float)));
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, startDir)));
     glEnableVertexAttribArray(4);
 
     return DrawObject {
         vao,
         vbo,
         0,
-        vertices,
+        std::vector<Vertex>(),
         std::vector<unsigned int>(),
-        unsigned(vertices.size() / 12),
-        0,
     };
 };
 
@@ -487,10 +469,10 @@ void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms) {
     // Bind and draw
     glBindVertexArray(object.vao);
     glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
-    if (object.nIndices > 0) {
-        glDrawElements(GL_TRIANGLES, object.nIndices, GL_UNSIGNED_INT, 0);
+    if (object.indices.size() > 0) {
+        glDrawElements(GL_TRIANGLES, object.indices.size(), GL_UNSIGNED_INT, 0);
     }
     else {
-        glDrawArrays(GL_TRIANGLES, 0, object.nVertices);
+        glDrawArrays(GL_TRIANGLES, 0, object.indices.size());
     }
 }
