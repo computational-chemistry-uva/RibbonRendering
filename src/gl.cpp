@@ -101,7 +101,7 @@ GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
     return shaderProgram;
 }
 
-DrawObject createMesh(std::vector<Vertex> &vertices, std::vector<unsigned int> &indices) {
+Mesh createMesh(std::vector<Vertex> &vertices, std::vector<unsigned int> &indices) {
     // Create buffers
     GLuint vao, vbo, ibo;
     glGenVertexArrays(1, &vao);
@@ -126,16 +126,16 @@ DrawObject createMesh(std::vector<Vertex> &vertices, std::vector<unsigned int> &
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
     glEnableVertexAttribArray(2);
 
-    return DrawObject {
+    return Mesh {
         vao,
         vbo,
         ibo,
-        std::vector<Vertex>(vertices),
         std::vector<unsigned int>(indices),
+        std::vector<Vertex>(vertices),
     };
 }
 
-DrawObject createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResolution = 8, float radius = 1.0f) {
+Mesh createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResolution = 8, float radius = 1.0f) {
     // Generate points along the spline
     std::vector<glm::vec3> splinePoints;
     std::vector<glm::vec3> tangents;
@@ -348,7 +348,6 @@ DrawObject createSpheres(std::vector<glm::vec3> &points) {
         vao,
         vbo,
         0,
-        std::vector<Vertex>(),
         std::vector<unsigned int>(),
     };
 };
@@ -424,7 +423,6 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
         vao,
         vbo,
         0,
-        std::vector<Vertex>(),
         std::vector<unsigned int>(),
     };
 };

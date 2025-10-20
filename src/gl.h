@@ -20,8 +20,11 @@ struct DrawObject {
     GLuint vao;
     GLuint vbo;
     GLuint ibo;
-    std::vector<Vertex> vertices;
     std::vector<unsigned int> indices;
+};
+
+struct Mesh : DrawObject {
+    std::vector<Vertex> vertices;
 };
 
 struct Camera {
@@ -91,8 +94,8 @@ struct Shaders {
 };
 
 // Helper functions to create DrawObjects from a set of input points
-DrawObject createMesh(std::vector<float> &vertices, std::vector<unsigned int> &indices);
-DrawObject createTubeMesh(BSpline& spline, int samples, int segments, float radius);
+Mesh createMesh(std::vector<float> &vertices, std::vector<unsigned int> &indices);
+Mesh createTubeMesh(BSpline& spline, int samples, int segments, float radius);
 DrawObject createSpheres(std::vector<glm::vec3> &points);
 DrawObject createCylinders(std::vector<glm::vec3> &points);
 

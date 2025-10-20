@@ -265,17 +265,17 @@ int main() {
     //std::cout << length << " " << nSegments << std::endl;
     unsigned int nSegments = (unsigned int)(length);
     // NOTE Because vertices are reused, wireframe indices are only correct when loopResolution is 4 / 10 / 16
-    DrawObject lod0 = createTubeMesh(spline, nSegments * 4, 16, 1.0f);
+    Mesh lod0 = createTubeMesh(spline, nSegments * 4, 16, 1.0f);
     std::cout << "LOD 0: " << lod0.vertices.size() << " vertices" << std::endl;
-    DrawObject lod1 = createTubeMesh(spline, nSegments * 2, 10, 1.0f);
+    Mesh lod1 = createTubeMesh(spline, nSegments * 2, 10, 1.0f);
     std::cout << "LOD 1: " << lod1.vertices.size() << " vertices" << std::endl;
-    DrawObject lod2 = createTubeMesh(spline, nSegments * 1, 4, 1.0f);
+    Mesh lod2 = createTubeMesh(spline, nSegments * 1, 4, 1.0f);
     std::cout << "LOD 2: " << lod2.vertices.size() << " vertices" << std::endl;
     DrawObject spheres = createSpheres(controlPoints);
     auto curvePoints = spline.generateCurve(nSegments);
     DrawObject cylinders = createCylinders(curvePoints);
 
-    DrawObject &mesh = lod1; // Tradeoff between quality and generation speed
+    Mesh &mesh = lod1; // Tradeoff between quality and generation speed
 
     std::cout << "Baking lightmap..." << std::endl;
 
