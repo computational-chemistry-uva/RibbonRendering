@@ -8,23 +8,55 @@
 
 // NOTE This currently does not handle deletion of GL resources, they are kept alive until termination of the program.
 
-struct Vertex {
+struct MeshVertex {
     glm::vec3 position;
     glm::vec3 normal;
     glm::vec2 texCoord;
 };
 
+struct SphereVertex {
+    glm::vec3 position;
+};
+
+struct CylinderVertex {
+    glm::vec3 aPos;
+    glm::vec3 bPos;
+    glm::vec3 aCPN;
+    glm::vec3 bCPN;
+    glm::vec3 startDir;
+};
+
 // Simple struct to help with drawing
-// TODO Maybe actually use inheritance to differentiate types of objects
 struct DrawObject {
-    GLuint vao;
-    GLuint vbo;
-    GLuint ibo;
-    std::vector<unsigned int> indices;
+    GLuint vao = 0;
+    GLuint vbo = 0;
+    GLuint ibo = 0;
+
+    virtual void draw() = 0;
 };
 
 struct Mesh : DrawObject {
-    std::vector<Vertex> vertices;
+    GLuint ibo;
+    std::vector<MeshVertex> vertices;
+    std::vector<unsigned int> indices;
+
+    // TODO References?
+    Mesh(std::vector<MeshVertex> vertices, std::vector<unsigned int> indices);
+    void draw();
+};
+
+struct Spheres : DrawObject {
+    std::vector<SphereVertex> vertices;
+
+    Spheres(std::vector<SphereVertex> vertices);
+    void draw();
+};
+
+struct Cylinders : DrawObject {
+    std::vector<CylinderVertex> vertices;
+
+    Cylinders(std::vector<CylinderVertex> vertices);
+    void draw();
 };
 
 struct Camera {
@@ -94,10 +126,9 @@ struct Shaders {
 };
 
 // Helper functions to create DrawObjects from a set of input points
-Mesh createMesh(std::vector<float> &vertices, std::vector<unsigned int> &indices);
 Mesh createTubeMesh(BSpline& spline, int samples, int segments, float radius);
-DrawObject createSpheres(std::vector<glm::vec3> &points);
-DrawObject createCylinders(std::vector<glm::vec3> &points);
+Spheres createSpheres(std::vector<glm::vec3> &points);
+Cylinders createCylinders(std::vector<glm::vec3> &points);
 
 // Draw DrawObject with given shader and uniform values
 void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms);

@@ -101,7 +101,7 @@ GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
     return shaderProgram;
 }
 
-Mesh createMesh(std::vector<Vertex> &vertices, std::vector<unsigned int> &indices) {
+Mesh::Mesh(std::vector<MeshVertex> vertices, std::vector<unsigned int> indices) {
     // Create buffers
     GLuint vao, vbo, ibo;
     glGenVertexArrays(1, &vao);
@@ -111,28 +111,26 @@ Mesh createMesh(std::vector<Vertex> &vertices, std::vector<unsigned int> &indice
     glBindVertexArray(vao);
     // Bind and fill VBO
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(MeshVertex), vertices.data(), GL_STATIC_DRAW);
     // Bind and fill IBO
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
     // TODO Note that vertex attributes should be changed here, or make it a function of Vertex
     // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, position));
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex, position));
     glEnableVertexAttribArray(0);
     // Normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, normal));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex, normal));
     glEnableVertexAttribArray(1);
     // Texture coordinate attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)offsetof(Vertex, texCoord));
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(MeshVertex), (void*)offsetof(MeshVertex, texCoord));
     glEnableVertexAttribArray(2);
 
-    return Mesh {
-        vao,
-        vbo,
-        ibo,
-        std::vector<unsigned int>(indices),
-        std::vector<Vertex>(vertices),
-    };
+    this->vao = vao;
+    this->vbo = vbo;
+    this->ibo = ibo;
+    this->vertices = vertices;
+    this->indices = indices;
 }
 
 Mesh createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResolution = 8, float radius = 1.0f) {
@@ -230,7 +228,7 @@ Mesh createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResolution 
 
     // Generate triangles between consecutive rings
     unsigned int totalVertices = splineSamples * (loopResolution + 1);
-    std::vector<Vertex> vertices(totalVertices);
+    std::vector<MeshVertex> vertices(totalVertices);
     std::vector<unsigned int> indices;
     std::vector<float> distAroundRing(loopResolution + 1);
     // Fill positions and texture coordinates
@@ -317,20 +315,10 @@ Mesh createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResolution 
         }
     }
 
-    return createMesh(vertices, indices);
+    return Mesh(vertices, indices);
 }
 
-// NOTE We have to upload the same vertex multiple times so the vertex shader can displace them and form a quad.
-//      Can't reuse the same vertex with indexed drawing because of the way gl_VertexID works.
-DrawObject createSpheres(std::vector<glm::vec3> &points) {
-    // Create vertex data
-    std::vector<glm::vec3> vertices;
-    for (int i = 0; i < points.size(); i++) {
-        for (int j = 0; j < 6; j++) {
-            vertices.push_back(points[i]);
-        }
-    }
-
+Spheres::Spheres(std::vector<SphereVertex> vertices) {
     // Create buffers
     GLuint vao, vbo;
     glGenVertexArrays(1, &vao);
@@ -344,27 +332,60 @@ DrawObject createSpheres(std::vector<glm::vec3> &points) {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
     glEnableVertexAttribArray(0);
 
-    return DrawObject {
-        vao,
-        vbo,
-        0,
-        std::vector<unsigned int>(),
-    };
+    this->vao = vao;
+    this->vbo = vbo;
+    this->vertices = vertices;
+}
+
+// NOTE We have to upload the same vertex multiple times so the vertex shader can displace them and form a quad.
+//      Can't reuse the same vertex with indexed drawing because of the way gl_VertexID works.
+Spheres createSpheres(std::vector<glm::vec3> &points) {
+    // Create vertex data
+    std::vector<SphereVertex> vertices;
+    for (int i = 0; i < points.size(); i++) {
+        for (int j = 0; j < 6; j++) {
+            vertices.push_back(SphereVertex { points[i] });
+        }
+    }
+    return Spheres(vertices);
 };
+
+Cylinders::Cylinders(std::vector<CylinderVertex> vertices) {
+    // Create buffers
+    GLuint vao, vbo;
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+    // Bind VAO first
+    glBindVertexArray(vao);
+    // Bind and fill VBO
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(CylinderVertex), vertices.data(), GL_STATIC_DRAW);
+    // A position attribute
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)offsetof(CylinderVertex, aPos));
+    glEnableVertexAttribArray(0);
+    // B position plane normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, bPos)));
+    glEnableVertexAttribArray(1);
+    // A cut plane normal attribute
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, aCPN)));
+    glEnableVertexAttribArray(2);
+    // B cut plane normal attribute
+    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, bCPN)));
+    glEnableVertexAttribArray(3);
+    // Start dir attribute
+    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, startDir)));
+    glEnableVertexAttribArray(4);
+
+    this->vao = vao;
+    this->vbo = vbo;
+    this->vertices = vertices;
+}
 
 // TODO Varying cylinder width
 // TODO This and the cylinder shaders could be split and optimized for the simple cylinder or helix case.
 //      For example, helices do not form splines so they don't need cut planes.
 //      Then they also only need one cap quad because the other always faces away from the camera.
-DrawObject createCylinders(std::vector<glm::vec3> &points) {
-    struct CylinderVertex {
-        glm::vec3 aPos;
-        glm::vec3 bPos;
-        glm::vec3 aCPN;
-        glm::vec3 bCPN;
-        glm::vec3 startDir;
-    };
-
+Cylinders createCylinders(std::vector<glm::vec3> &points) {
     // Create vertex data
     std::vector<CylinderVertex> vertices;
     for (int i = 0; i < points.size() - 1; i++) {
@@ -393,40 +414,28 @@ DrawObject createCylinders(std::vector<glm::vec3> &points) {
             vertices.push_back(v);
         }
     }
-
-    // Create buffers
-    GLuint vao, vbo;
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &vbo);
-    // Bind VAO first
-    glBindVertexArray(vao);
-    // Bind and fill VBO
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(CylinderVertex), vertices.data(), GL_STATIC_DRAW);
-    // A position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)offsetof(CylinderVertex, aPos));
-    glEnableVertexAttribArray(0);
-    // B position plane normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, bPos)));
-    glEnableVertexAttribArray(1);
-    // A cut plane normal attribute
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, aCPN)));
-    glEnableVertexAttribArray(2);
-    // B cut plane normal attribute
-    glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, bCPN)));
-    glEnableVertexAttribArray(3);
-    // Start dir attribute
-    glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(CylinderVertex), (void*)(offsetof(CylinderVertex, startDir)));
-    glEnableVertexAttribArray(4);
-
-    return DrawObject {
-        vao,
-        vbo,
-        0,
-        std::vector<unsigned int>(),
-    };
+    return Cylinders(vertices);
 };
 
+void Mesh::draw() {
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+}
+
+void Spheres::draw() {
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+}
+
+void Cylinders::draw() {
+    glBindVertexArray(vao);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+}
+
+// TODO Make this a DrawObject member function?
 void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms) {
     // Use shader
     glUseProgram(shaderProgram);
@@ -464,13 +473,6 @@ void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms) {
     uniformLoc = glGetUniformLocation(shaderProgram, "pitch");
     glUniform1f(uniformLoc, uniforms.pitch);
 
-    // Bind and draw
-    glBindVertexArray(object.vao);
-    glBindBuffer(GL_ARRAY_BUFFER, object.vbo);
-    if (object.indices.size() > 0) {
-        glDrawElements(GL_TRIANGLES, object.indices.size(), GL_UNSIGNED_INT, 0);
-    }
-    else {
-        glDrawArrays(GL_TRIANGLES, 0, object.indices.size());
-    }
+    // Draw object
+    object.draw();
 }

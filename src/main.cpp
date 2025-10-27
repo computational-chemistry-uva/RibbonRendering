@@ -271,9 +271,9 @@ int main() {
     std::cout << "LOD 1: " << lod1.vertices.size() << " vertices" << std::endl;
     Mesh lod2 = createTubeMesh(spline, nSegments * 1, 4, 1.0f);
     std::cout << "LOD 2: " << lod2.vertices.size() << " vertices" << std::endl;
-    DrawObject spheres = createSpheres(controlPoints);
+    Spheres spheres = createSpheres(controlPoints);
     auto curvePoints = spline.generateCurve(nSegments);
-    DrawObject cylinders = createCylinders(curvePoints);
+    Cylinders cylinders = createCylinders(curvePoints);
 
     Mesh &mesh = lod1; // Tradeoff between quality and generation speed
 
@@ -320,9 +320,9 @@ int main() {
             lmSetTargetLightmap(ctx, data, w, h, 4);
 
             lmSetGeometry(ctx, NULL,
-                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + offsetof(Vertex, position), sizeof(Vertex),
-                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + offsetof(Vertex, normal), sizeof(Vertex),
-                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + offsetof(Vertex, texCoord), sizeof(Vertex),
+                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + offsetof(MeshVertex, position), sizeof(MeshVertex),
+                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + offsetof(MeshVertex, normal), sizeof(MeshVertex),
+                    LM_FLOAT, reinterpret_cast<uint8_t*>(mesh.vertices.data()) + offsetof(MeshVertex, texCoord), sizeof(MeshVertex),
                     mesh.indices.size(), LM_UNSIGNED_INT, mesh.indices.data());
 
             glDisable(GL_CULL_FACE);
