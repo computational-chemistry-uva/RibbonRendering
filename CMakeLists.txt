@@ -40,6 +40,7 @@ include_directories(${imgui_SOURCE_DIR} ${imgui_SOURCE_DIR}/backends)
 # Add executable with workspace folder name
 add_executable(${WORKSPACE_NAME}
     ${IMGUI_SOURCES}
+    src/spline.cpp
     src/gl.cpp
     src/window.cpp
     src/main.cpp

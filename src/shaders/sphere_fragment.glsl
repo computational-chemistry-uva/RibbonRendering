@@ -13,6 +13,7 @@ uniform mat4 projection;
 
 uniform vec3 lightPos;
 uniform float lightIntensity;
+uniform float ambientLightIntensity;
 uniform int drawNormals;
 uniform float sphereRadius;
 uniform int raytraced;
@@ -62,7 +63,7 @@ void main() {
         float d = dot(normal, lightDir);
 
         vec3 albedo = fCol;
-        float ambient = 0.1;
+        float ambient = ambientLightIntensity;
         float diffuse = max(d, 0.0);
         float specular = pow(max(dot(viewDir, reflectDir), 0.0), 64);
         FragColor = vec4(albedo * (ambient + (diffuse + specular) * lightIntensity), 1.0);

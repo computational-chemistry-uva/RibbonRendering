@@ -9,6 +9,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <string>
 #include <vector>
+#define LIGHTMAPPER_IMPLEMENTATION
+#include "lightmapper.h"
 
 void Camera::update(MouseState mouse) {
     if (mouse.leftButtonDown) {
@@ -22,28 +24,6 @@ void Camera::update(MouseState mouse) {
     }
     dist = (1.0f - 0.25f * mouse.dscroll) * dist;
     dist = glm::clamp(dist, 1.0f, 500.0f);
-}
-
-void Uniforms::updateMatrices(GLFWwindow *window, Camera &camera) {
-    // Create projection matrix
-    int w, h;
-    glfwGetWindowSize(window, &w, &h);
-    projection = glm::perspective(
-        glm::radians(camera.fov),   // Field of view
-        float(w) / float(h),        // Aspect ratio
-        0.1f,                       // Near plane
-        1000.0f                      // Far plane
-    );
-    // Create view matrix
-    view = glm::mat4(1.0f);
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -camera.dist));
-    view = glm::rotate(view, glm::radians(camera.pitch), glm::vec3(1.0f, 0.0f, 0.0f));
-    view = glm::rotate(view, glm::radians(camera.yaw), glm::vec3(0.0f, 1.0f, 0.0f));
-    // Create model matrix
-    model = glm::mat4(1.0f);
-
-    // Precompute light position in view space
-    lightPos = view * glm::vec4(2.0f, 3.0f, 9.0f, 1.0f);
 }
 
 // Helper function to read shader from file
@@ -101,6 +81,68 @@ GLuint createShaderProgram(const char* vertexPath, const char* fragmentPath) {
     return shaderProgram;
 }
 
+void Uniforms::updateMatrices(GLFWwindow *window, Camera &camera) {
+    // Create projection matrix
+    int w, h;
+    glfwGetWindowSize(window, &w, &h);
+    projection = glm::perspective(
+            glm::radians(camera.fov),   // Field of view
+            float(w) / float(h),        // Aspect ratio
+            0.1f,                       // Near plane
+            1000.0f                      // Far plane
+            );
+    // Create view matrix
+    view = glm::mat4(1.0f);
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -camera.dist));
+    view = glm::rotate(view, glm::radians(camera.pitch), glm::vec3(1.0f, 0.0f, 0.0f));
+    view = glm::rotate(view, glm::radians(camera.yaw), glm::vec3(0.0f, 1.0f, 0.0f));
+    // Create model matrix
+    model = glm::mat4(1.0f);
+
+    // Precompute light position in view space
+    lightPos = view * glm::vec4(2.0f, 3.0f, 9.0f, 1.0f);
+}
+
+// Helper functions
+void setUniform(GLuint shaderProgram, const char name[], const glm::mat4& v) {
+    GLint loc = glGetUniformLocation(shaderProgram, name);
+    glUniformMatrix4fv(loc, 1, GL_FALSE, glm::value_ptr(v));
+}
+void setUniform(GLuint shaderProgram, const char name[], const glm::vec3& v) {
+    GLint loc = glGetUniformLocation(shaderProgram, name);
+    glUniform3fv(loc, 1, glm::value_ptr(v));
+}
+void setUniform(GLuint shaderProgram, const char name[], float v) {
+    GLint loc = glGetUniformLocation(shaderProgram, name);
+    glUniform1f(loc, v);
+}
+void setUniform(GLuint shaderProgram, const char name[], int v) {
+    GLint loc = glGetUniformLocation(shaderProgram, name);
+    glUniform1i(loc, v);
+}
+void setUniform(GLuint shaderProgram, const char name[], bool v) {
+    GLint loc = glGetUniformLocation(shaderProgram, name);
+    glUniform1i(loc, v);
+}
+
+void Uniforms::setUniforms(GLuint shaderProgram) {
+    setUniform(shaderProgram, "model", model);
+    setUniform(shaderProgram, "view", view);
+    setUniform(shaderProgram, "projection", projection);
+    setUniform(shaderProgram, "lightPos", lightPos);
+    setUniform(shaderProgram, "drawNormals", drawNormals);
+    setUniform(shaderProgram, "drawTexture", drawTexture);
+    setUniform(shaderProgram, "checkerboard", checkerboard);
+    setUniform(shaderProgram, "lightIntensity", lightIntensity);
+    setUniform(shaderProgram, "ambientLightIntensity", ambientLightIntensity);
+    setUniform(shaderProgram, "sphereRadius", sphereRadius);
+    setUniform(shaderProgram, "raytraced", raytraced);
+    setUniform(shaderProgram, "cylinderRadius", cylinderRadius);
+    setUniform(shaderProgram, "cylinderMode", cylinderMode);
+    setUniform(shaderProgram, "pitch", pitch);
+    setUniform(shaderProgram, "width", width);
+}
+
 Mesh::Mesh(std::vector<MeshVertex> vertices, std::vector<unsigned int> indices) {
     // Create buffers
     GLuint vao, vbo, ibo;
@@ -133,45 +175,39 @@ Mesh::Mesh(std::vector<MeshVertex> vertices, std::vector<unsigned int> indices) 
     this->indices = indices;
 }
 
-Mesh createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResolution = 8, float radius = 1.0f) {
-    // Generate points along the spline
+Mesh createSplineMesh(BSpline& spline, int splineSamples = 50, int loopResolution = 8, float radius = 1.0f) {
+    float totalLength = spline.arcLength(1.0f);
+    //std::cout << "Spline length: " << totalLength << std::endl;
+
+    // Sample points along the spline
     std::vector<glm::vec3> splinePoints;
     std::vector<glm::vec3> tangents;
     std::vector<glm::vec3> normals;
     std::vector<glm::vec3> binormals;
-
-    float totalLength = spline.arcLength(1.0f);
-    //std::cout << "Spline length: " << totalLength << std::endl;
-
     for (int i = 0; i < splineSamples; i++) {
         float targetLength = float(i) / float(splineSamples - 1) * totalLength;
         float t = spline.parameterFromArcLength(targetLength, totalLength);
         glm::vec3 point = spline.evaluate(t);
-        //std::cout << "point " << point.x << ", " << point.y << ", " << point.z << std::endl;
         splinePoints.push_back(point);
         glm::vec3 tangent = glm::normalize(spline.derivative(t));
-        //std::cout << "tangent " << tangent.x << ", " << tangent.y << ", " << tangent.z << std::endl;
         tangents.push_back(tangent);
         glm::vec3 normal = glm::normalize(spline.evaluateOrientation(t));
-        //std::cout << "normal " << normal.x << ", " << normal.y << ", " << normal.z << std::endl;
-        //if (i > 0) std::cout << glm::dot(normal, normals.back()) << std::endl;
-        if (i > 0 && glm::dot(normal, normals.back()) < 0.0) {
-            //normal *= -1.0f; // TODO
-            //std::cout << "normal flipped" << std::endl;
-        }
+        // TODO When spline binormals flip, mesh ends up with flipped normals
+        // TODO Points where normals flip need to be the same across LODs
+        //if (i > 0 && glm::dot(normal, normals.back()) < 0.0) {
+        //    normal *= -1.0f; // TODO
+        //    std::cout << "normal flipped" << std::endl;
+        //}
         normals.push_back(normal);
         glm::vec3 binormal = glm::normalize(glm::cross(tangent, normal));
-        //std::cout << "binormal " << binormal.x << ", " << binormal.y << ", " << binormal.z << std::endl;
-        //if (i > 0) std::cout << glm::dot(binormal, binormals.back()) << std::endl;
         //if (i > 0 && glm::dot(binormal, binormals.back()) < 0.0) {
         //    binormal *= -1.0f; // TODO
         //    std::cout << "binormal flipped" << std::endl;
         //}
-        //std::cout << std::endl;
         binormals.push_back(binormal);
     }
 
-    // Create cross-section circles for each spline point
+    // Create cross-section circles for each sample
     std::vector<std::vector<glm::vec3>> rings(splineSamples);
     for (int i = 0; i < splineSamples; i++) {
         float t = float(i) / float(splineSamples - 1);
@@ -182,22 +218,23 @@ Mesh createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResolution 
         // Generate circle points using interpolated orientation
         rings[i].resize(loopResolution);
         for (int j = 0; j < loopResolution; j++) {
-            // TODO Formula for arbitrary width sheet with evenly rounded corners
-
             float angle = 2.0f * M_PI * float(j) / float(loopResolution);
             float d = glm::sin(angle);
             float n = glm::cos(angle);
 
-            d = std::clamp(d, -0.125f, 0.125f); // TODO Capped circular
-            //n = std::clamp(n, -0.125f, 0.125f);
-            //d /= 5.0f; // TODO Oval
+            // NOTE Capped circular
+            d = glm::clamp(d, -0.125f, 0.125f);
+            //n = glm::clamp(n, -0.125f, 0.125f);
+
+            // NOTE Oval
+            //d /= 5.0f;
             //n /= 5.0f;
             //if (n > 0.0f) n += 0.5f;
             //else if (n < 0.0f) n -= 0.5f;
             //float d = (j % (loopResolution / 2) == 0) ? 0.0f : 1.0f;
             //float d = 1.0f;
 
-            // TODO Rectangular with dull edge, even spacing
+            // NOTE Rectangular with dull edge, even spacing
             //int a = j % (loopResolution / 2);
             //float d = (a == 0) ? 0.0f : 0.125f;
             //float n = -((a / (loopResolution / 2.0f - 1.0f)) * 2.0f - 1.0f);
@@ -208,18 +245,24 @@ Mesh createTubeMesh(BSpline& spline, int splineSamples = 50, int loopResolution 
             //    n *= -1.0f;
             //}
 
-            // Arrows
-            //t = fmod(t, 0.1f);
-            //float ar = 0.03f;
-            //if (t > 2.0f * ar) {
-            //    n *= 0.25f;
-            //}
-            //else if (t > ar) {
-            //    n *= 0.5f;
-            //}
-            //else {
-            //    n *= t / ar + 0.25f;
-            //}
+            // TODO Arrows
+            if (i < float(2) / float(spline.getControlPoints().size()) * splineSamples) {
+                n *= 0.25f;
+            }
+            else if (i < float(12) / float(spline.getControlPoints().size()) * splineSamples) {
+                float l = 2.0f / spline.getControlPoints().size();
+                t = fmod(t, l);
+                float ar = 1.0f / spline.getControlPoints().size();
+                if (t > 2.0f * ar) {
+                    n *= 0.25f;
+                }
+                else if (t > ar) {
+                    n *= 0.5f;
+                }
+                else {
+                    n *= t / ar + 0.25f;
+                }
+            }
 
             glm::vec3 offset = radius * (d * binormal + n * normal);
             rings[i][j] = center + offset;
@@ -417,9 +460,126 @@ Cylinders createCylinders(std::vector<glm::vec3> &points) {
     return Cylinders(vertices);
 };
 
+// See https://github.com/ands/lightmapper
+void bakeLightmap(GLuint *texture, Mesh &mesh, GLuint shaderProgram) {
+    // TODO Runtime controls for re-baking
+    // TODO Credit lightmapper in README (check license)
+    // TODO Add license
+    // TODO Compute texture size dynamically
+    // TODO Pack into square texture
+
+    const int w = 2048;
+    const int h = 32;
+
+    // Create lightmapper context
+    lm_context *ctx = lmCreate(
+            64,               // Hemisphere resolution (power of two, max=512)
+            0.001f, 100.0f,   // zNear, zFar of hemisphere cameras
+            1.0f, 1.0f, 1.0f, // Background color (white for ambient occlusion)
+            2, 0.01f,         // Lightmap interpolation threshold (small differences are interpolated rather than sampled)
+            0.0f);            // Modifier for camera-to-surface distance for hemisphere rendering
+    if (!ctx) {
+        fprintf(stderr, "Error: Could not initialize lightmapper.\n");
+        return;
+    }
+
+    // Create texture if it doesn't exist yet
+    if (*texture == 0) {
+        glGenTextures(1, texture);
+        glBindTexture(GL_TEXTURE_2D, *texture);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); // Loop around
+    }
+    unsigned char emissive[] = { 0, 0, 0, 255 }; // Initial texture color
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, emissive);
+
+    // Create buffer to store lightmap data in
+    float data[w * h * 4] = { 0.0f };
+
+    for (int bounce = 0; bounce < 1; bounce++) {
+        // Clear buffer
+        memset(data, 0.0f, sizeof(float) * w * h * 3);
+        lmSetTargetLightmap(ctx, data, w, h, 4);
+
+        // Set mesh data
+        char *vertexData = reinterpret_cast<char*>(mesh.vertices.data());
+        lmSetGeometry(ctx, NULL,
+                LM_FLOAT, vertexData + offsetof(MeshVertex, position), sizeof(MeshVertex),
+                LM_FLOAT, vertexData + offsetof(MeshVertex, normal), sizeof(MeshVertex),
+                LM_FLOAT, vertexData + offsetof(MeshVertex, texCoord), sizeof(MeshVertex),
+                mesh.indices.size(), LM_UNSIGNED_INT, mesh.indices.data());
+
+        // Set GL drawing settings for lightmapper to work properly
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_BLEND);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glShadeModel(GL_SMOOTH);
+        glDepthRange(0.0, 1.0);
+
+        // Bake the lightmap by rendering the scene for each hemisphere point
+        int vp[4];
+        glm::mat4 view, proj;
+        double lastUpdateTime = 0.0;
+        int i = 0;
+        while (lmBegin(ctx, vp, &view[0][0], &proj[0][0])) {
+            // Render to lightmapper framebuffer
+            glViewport(vp[0], vp[1], vp[2], vp[3]);
+
+            // Set uniforms
+            Uniforms uniforms;
+            uniforms.model = glm::mat4(1.0f);
+            uniforms.view = view;
+            uniforms.projection = proj;
+            uniforms.lightIntensity = 0.0f; // Point light contribution should not be baked in
+                                            //uniforms.lightPos = view * glm::vec4(1.0f, 1.5f, 4.5f, 1.0f);
+            uniforms.ambientLightIntensity = 1.0f; // Self-irradiance in subsequent passes
+            GLint uniformLoc = glGetUniformLocation(shaderProgram, "lightmap");
+            glUniform1i(uniformLoc, 0);
+
+            // Draw scene
+            glBindTexture(GL_TEXTURE_2D, *texture);
+            draw(mesh, shaderProgram, uniforms);
+
+            // Display progress
+            double time = glfwGetTime();
+            if (time - lastUpdateTime > 0.01f) {
+                lastUpdateTime = time;
+                printf("\r%6.2f%%", lmProgress(ctx) * 100.0f);
+                fflush(stdout);
+            }
+
+            lmEnd(ctx);
+            i++;
+        }
+        printf("\rFinished baking %d triangles (%d iterations).\n", int(mesh.indices.size()) / 3, i);
+
+        // Postprocess texture
+        float temp[w * h * 4] = { 0.0f };
+        lmImageDilate(data, temp, w, h, 4);
+        lmImageSmooth(temp, data, w, h, 4);
+
+        // Upload result
+        glBindTexture(GL_TEXTURE_2D, *texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, data);
+
+        // Save result to a file
+        // NOTE For debugging. Not necessary
+        lmImagePower(data, w, h, 4, 1.0f / 2.2f, 0x7); // Gamma correct color channels
+        if (lmImageSaveTGAf("lightmap.tga", data, w, h, 4, 1.0f)) {
+            printf("Saved lightmap.tga\n");
+        }
+    }
+
+    lmDestroy(ctx);
+}
+
 void Mesh::draw() {
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
     glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 }
 
@@ -441,37 +601,7 @@ void draw(DrawObject &object, GLuint shaderProgram, Uniforms &uniforms) {
     glUseProgram(shaderProgram);
 
     // Set uniforms
-    GLint uniformLoc;
-    uniformLoc = glGetUniformLocation(shaderProgram, "model");
-    glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, glm::value_ptr(uniforms.model));
-    uniformLoc = glGetUniformLocation(shaderProgram, "view");
-    glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, glm::value_ptr(uniforms.view));
-    uniformLoc = glGetUniformLocation(shaderProgram, "projection");
-    glUniformMatrix4fv(uniformLoc, 1, GL_FALSE, glm::value_ptr(uniforms.projection));
-    uniformLoc = glGetUniformLocation(shaderProgram, "lightPos");
-    glUniform3f(uniformLoc, uniforms.lightPos.x, uniforms.lightPos.y, uniforms.lightPos.z);
-    uniformLoc = glGetUniformLocation(shaderProgram, "drawNormals");
-    glUniform1i(uniformLoc, uniforms.drawNormals);
-    uniformLoc = glGetUniformLocation(shaderProgram, "drawTexture");
-    glUniform1i(uniformLoc, uniforms.drawTexture);
-    uniformLoc = glGetUniformLocation(shaderProgram, "checkerboard");
-    glUniform1i(uniformLoc, uniforms.checkerboard);
-    uniformLoc = glGetUniformLocation(shaderProgram, "lightIntensity");
-    glUniform1f(uniformLoc, uniforms.lightIntensity);
-    uniformLoc = glGetUniformLocation(shaderProgram, "ambientLightIntensity");
-    glUniform1f(uniformLoc, uniforms.ambientLightIntensity);
-    uniformLoc = glGetUniformLocation(shaderProgram, "sphereRadius");
-    glUniform1f(uniformLoc, uniforms.sphereRadius);
-    uniformLoc = glGetUniformLocation(shaderProgram, "raytraced");
-    glUniform1i(uniformLoc, uniforms.raytraced);
-    uniformLoc = glGetUniformLocation(shaderProgram, "cylinderRadius");
-    glUniform1f(uniformLoc, uniforms.cylinderRadius);
-    uniformLoc = glGetUniformLocation(shaderProgram, "cylinderMode");
-    glUniform1i(uniformLoc, uniforms.cylinderMode);
-    uniformLoc = glGetUniformLocation(shaderProgram, "width");
-    glUniform1f(uniformLoc, uniforms.width);
-    uniformLoc = glGetUniformLocation(shaderProgram, "pitch");
-    glUniform1f(uniformLoc, uniforms.pitch);
+    uniforms.setUniforms(shaderProgram);
 
     // Draw object
     object.draw();
