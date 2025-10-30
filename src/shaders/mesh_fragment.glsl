@@ -34,20 +34,29 @@ void main() {
         //float specular = pow(max(dot(viewDir, reflectDir), 0.0), 64);
         float specular = 0.0f;
 
-        // Ambient occlusion
-        vec3 pattern;
-        if (drawTexture != 0) {
-            pattern = vec4(texture(lightmap, fTexCoord)).rgb;
-        }
-        else {
-            pattern = vec3(0.75);
-        }
+        // Checkerboard mode
         vec3 albedo = fCol;
         if (checkerboard != 0) {
             ivec2 checker = ivec2(fTexCoord * textureSize(lightmap, 0));
             albedo *= (checker.x % 2) ^ (checker.y % 2);
         }
+
+        // Ambient occlusion
+        vec3 pattern;
+        if (drawTexture == 0) {
+            pattern = vec3(0.75);
+        }
+        else {
+            pattern = vec4(texture(lightmap, fTexCoord)).rgb;
+        }
         vec3 ambient = ambientLightIntensity * pattern;
+
+        // Ignore lighting for texture only mode
+        if (drawTexture == 2) {
+            diffuse = 0.0f;
+            specular = 0.0f;
+            ambient = pattern;
+        }
 
         // For lightmapping, backface culling is turned off
         // See https://github.com/ands/lightmapper

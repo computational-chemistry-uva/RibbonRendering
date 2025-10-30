@@ -58,10 +58,10 @@ struct Uniforms {
     glm::mat4 projection;
     glm::vec3 lightPos;
     bool drawNormals = false;
-    bool drawTexture = true;
+    int drawTexture = 2;
     bool checkerboard = false;
     float lightIntensity = 1.0f;
-    float ambientLightIntensity = 1.0f; // TODO Rename to ambientOcclusionIntensity, change shader to multiply
+    float ambientLightIntensity = 0.1f;
     float sphereRadius = 1.0f;
     bool raytraced = true;
     float cylinderRadius = 0.5f;

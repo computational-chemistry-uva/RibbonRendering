@@ -30,24 +30,14 @@ struct Settings {
     bool drawMesh = true;
     bool drawSpheres = false;
     bool drawCylinders = false;
+    int lod = 0;
 };
 
 void settingsUI(Settings &settings) {
     ImGui::SetNextWindowPos({0, 0});
     ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize);
 
-    // Toggle visibility of objects
-    ImGui::Text("Objects");
-    ImGui::Indent();
-    {
-        ImGui::Checkbox("Mesh", &settings.drawMesh);
-        ImGui::Checkbox("Spheres", &settings.drawSpheres);
-        ImGui::Checkbox("Cylinders", &settings.drawCylinders);
-    }
-    ImGui::Unindent();
-
     // Settings that apply to all objects
-    ImGui::Spacing();
     ImGui::Text("Draw settings");
     ImGui::Indent();
     {
@@ -55,9 +45,6 @@ void settingsUI(Settings &settings) {
         ImGui::Checkbox("Draw normals", &settings.uniforms.drawNormals);
         if (settings.uniforms.drawNormals) ImGui::BeginDisabled();
         {
-            // TODO Draw texture checkbox should draw ONLY texture, fully, lit, like draw normals
-            ImGui::Checkbox("Draw texture", &settings.uniforms.drawTexture);
-            ImGui::Checkbox("Checkerboard", &settings.uniforms.checkerboard);
             ImGui::SetNextItemWidth(128);
             ImGui::SliderFloat("Light", &settings.uniforms.lightIntensity, 0.0f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
             ImGui::SetNextItemWidth(128);
@@ -67,27 +54,29 @@ void settingsUI(Settings &settings) {
     }
     ImGui::Unindent();
 
+    ImGui::Spacing();
+
     // Spheres parameters
-    if (!settings.drawSpheres) ImGui::BeginDisabled();
+    ImGui::Checkbox("Sphere impostors", &settings.drawSpheres);
+    ImGui::Indent();
     {
-        ImGui::Spacing();
-        ImGui::Text("Sphere impostors");
-        ImGui::Indent();
+        if (!settings.drawSpheres) ImGui::BeginDisabled();
         {
             ImGui::SetNextItemWidth(128);
             ImGui::SliderFloat("Radius##Sphere", &settings.uniforms.sphereRadius, 0.1f, 2.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
             ImGui::Checkbox("Ray traced", &settings.uniforms.raytraced);
         }
-        ImGui::Unindent();
+        if (!settings.drawSpheres) ImGui::EndDisabled();
     }
-    if (!settings.drawSpheres) ImGui::EndDisabled();
+    ImGui::Unindent();
+
+    ImGui::Spacing();
 
     // Cylinders parameters
-    if (!settings.drawCylinders) ImGui::BeginDisabled();
-    ImGui::Spacing();
-    ImGui::Text("Cylinder impostors");
+    ImGui::Checkbox("Cylinder impostors", &settings.drawCylinders);
     ImGui::Indent();
     {
+        if (!settings.drawCylinders) ImGui::BeginDisabled();
         ImGui::SetNextItemWidth(128);
         ImGui::SliderFloat("Radius##Cylinder", &settings.uniforms.cylinderRadius, 0.05f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
         ImGui::SetNextItemWidth(128);
@@ -98,9 +87,27 @@ void settingsUI(Settings &settings) {
         ImGui::SetNextItemWidth(128);
         ImGui::SliderFloat("Width", &settings.uniforms.width, 0.05f, 1.0f, "%.2f", ImGuiSliderFlags_NoRoundToFormat);
         if (settings.uniforms.cylinderMode != 2) ImGui::EndDisabled();
+        if (!settings.drawCylinders) ImGui::EndDisabled();
     }
     ImGui::Unindent();
-    if (!settings.drawCylinders) ImGui::EndDisabled();
+
+    ImGui::Spacing();
+
+    // Mesh settings
+    ImGui::Checkbox("Mesh", &settings.drawMesh);
+    ImGui::Indent();
+    if (!settings.drawMesh) ImGui::BeginDisabled();
+    {
+        ImGui::SetNextItemWidth(128);
+        const char *lods[] = { "Auto", "0", "1", "2" };
+        ImGui::Combo("LOD", &settings.lod, lods, 4);
+        ImGui::SetNextItemWidth(128);
+        const char *textureModes[] = { "Off", "On", "Texture only" };
+        ImGui::Combo("Texture", &settings.uniforms.drawTexture, textureModes, 3);
+        ImGui::Checkbox("Checkerboard", &settings.uniforms.checkerboard);
+    }
+    if (!settings.drawMesh) ImGui::EndDisabled();
+    ImGui::Unindent();
 
     ImGui::End();
 }
@@ -177,14 +184,15 @@ int main() {
 
         // Select level of detail
         DrawObject *mesh;
-        if (camera.dist > 200.0f) {
-            mesh = &lod2;
-        }
-        else if (camera.dist > 50.0f) {
-            mesh = &lod1;
-        }
-        else {
-            mesh = &lod0;
+        switch (settings.lod) {
+            case 0:
+                if (camera.dist > 200.0f) { mesh = &lod2; }
+                else if (camera.dist > 50.0f) { mesh = &lod1; }
+                else { mesh = &lod0; }
+                break;
+            case 1: mesh = &lod0; break;
+            case 2: mesh = &lod1; break;
+            case 3: mesh = &lod2; break;
         }
 
         // Bind lightmap texture
