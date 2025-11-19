@@ -1,5 +1,7 @@
 # Molecule rendering using impostors and spline meshes
 
+Author: Mario Holubar (mario.holubar@googlemail.com)
+
 Developed for University of Amsterdam's [iRASPA](https://iraspa.org/) software.
 
 ## Impostors

@@ -11,6 +11,7 @@ static void glfw_error_callback(int error, const char* description) {
 
 // Resize GL viewport on window resize
 void windowResizeCallback(GLFWwindow* window, int width, int height) {
+    //glfwGetFramebufferSize(window, &width, &height);
     glViewport(0, 0, width, height);
 }
 
@@ -63,7 +64,11 @@ GLFWwindow* initWindow() {
 
     // Set GL version
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_COCOA_RETINA_FRAMEBUFFER, GL_FALSE);
+
     // Enable MSAA (works with impostor shaders out of the box!)
     //glfwWindowHint(GLFW_SAMPLES, 16);
 
@@ -82,6 +87,7 @@ GLFWwindow* initWindow() {
 
     // Create window
     GLFWwindow* window = glfwCreateWindow(1280, 720, "Viewer", NULL, NULL);
+
     if (!window) {
         std::cerr << "Failed to create window" << std::endl;
         glfwTerminate();

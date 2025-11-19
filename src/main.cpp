@@ -9,7 +9,7 @@
 #include <iostream>
 
 // Set GL version
-const char* glsl_version = "#version 130";
+const char* glsl_version = "#version 330";
 
 // Imgui setup
 // NOTE Needs to be done after setting input callbacks!
@@ -115,6 +115,7 @@ void settingsUI(Settings &settings) {
 int main() {
     // Initialize GL context and create window
     GLFWwindow *window = initWindow();
+
     if (!window) return 1;
 
     // Initialize ImGui
